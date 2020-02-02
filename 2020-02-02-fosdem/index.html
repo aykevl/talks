@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<title>FOSDEM talk</title>
+
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/reset.css">
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/reveal.css">
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/theme/black.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/lib/css/monokai.css">
+
+		<style>
+.reveal pre code {
+	-moz-tab-size: 4;
+	tab-size: 4;
+}
+		</style>
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../lib/reveal.js-3.8.0/css/print/pdf.css' : '../lib/reveal.js-3.8.0/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h2>Ayke van Laethem</h2>
+					<p><em>Working on TinyGo</em></p>
+					<p>
+						<i class="fa fa-github"></i> <a href="https://github.com/aykevl">@aykevl</a>
+						<br/>
+						<i class="fa fa-twitter"></i> <a href="https://twitter.com/aykevl">@aykevl</a>
+					</p>
+				</section>
+				<section>
+					<blockquote>
+						"If Python can run on microcontrollers,<br/>
+						why not Go?"
+					</blockquote>
+				</section>
+				<section>
+					At Chaos Communication Congress 2018<br/>
+					<img class="plain" src="ccc-cube-2.gif"/><br/>
+					<a href="https://twitter.com/Icewalker1974/status/1165148285960634368">twitter.com/Icewalker1974/status/1165148285960634368</a>
+				</section>
+				<section>
+					<h2>Microchip SAM D5</h2>
+					<p>ARM Cortex-M4</p>
+					<p>120MHz</p>
+				</section>
+				<section>
+					<pre><code class="hljs go stretch">// +build itsybitsy_m4
+
+package main
+
+import (
+	"machine"
+
+	"github.com/aykevl/things/hub75"
+)
+
+var display = hub75.New(hub75.Config{
+	Data:         machine.NoPin,
+	Clock:        machine.NoPin,
+	Latch:        machine.D5,
+	OutputEnable: machine.D7,
+	A:            machine.D9,
+	B:            machine.D10,
+	C:            machine.D11,
+	D:            machine.D12,
+	NumScreens:   6,
+	Brightness:   1,
+})</code></pre>
+				</section>
+				<section>
+					<pre><code class="hljs go stretch">type Displayer interface {
+	// Size returns the current size of the display.
+	Size() (x, y int16)
+
+	// SetPizel modifies the internal buffer.
+	SetPixel(x, y int16, c color.RGBA)
+
+	// Display sends the buffer (if any) to the screen.
+	Display() error
+}</code></pre>
+				</section>
+				<section>
+					<pre><code class="hljs go stretch" style="font-size: 16px">func drawPixels(t time.Time, getColor func(x, y, z int, t time.Time) color.RGBA) {
+	for x := 0; x &lt; size; x++ {
+		for y := 0; y &lt; size; y++ {
+			display.SetPixel(int16(x+size*5), int16(y), getColor(x+1, y+1, 0, t))
+			display.SetPixel(int16(x+size*4), int16(y), getColor(0, x+1, y+1, t))
+			display.SetPixel(int16(x+size*3), int16(y), getColor(size-x, 0, y+1, t))
+			display.SetPixel(int16(x+size*2), int16(y), getColor(size+1, size-x, y+1, t))
+			display.SetPixel(int16(x+size*1), int16(y), getColor(x+1, size+1, y+1, t))
+			display.SetPixel(int16(x+size*0), int16(y), getColor(x+1, size-y, size+1, t))
+		}
+	}
+}</code></pre>
+				</section>
+				<section>
+					<pre><code>// noiseAt returns noise at the specified location.
+func noiseAt(x, y, z int, t time.Time) color.RGBA {
+	value := ledsgo.Noise4(
+		int32(t.UnixNano()&gt;&gt;20),
+		int32(x*128),
+		int32(y*128),
+		int32(z*128),
+	)
+	hue := uint16(value) * 2
+	return ledsgo.Color{hue, 0xff, 0xff}.Spectrum()
+}</code></pre>
+				</section>
+				<section>
+					<pre><code class="hljs go stretch" style="font-size: 16px">// fireAt returns fire at the specified location.
+func fireAt(x, y, z int, t time.Time) color.RGBA {
+	const pointsPerCircle = 12 // how many LEDs there are per turn of the torch
+	const cooling = 56         // higher means faster cooling
+	const detail = 400         // higher means more detailed flames
+	const speed = 12           // higher means faster
+	const screenHeight = 33
+	if z == 0 {
+		return color.RGBA{}
+	}
+	heat := ledsgo.Noise3(
+		int32((31-z)*detail)-int32((t.UnixNano()&gt;&gt;20)*speed),
+		int32(x*detail),
+		int32(y*detail))/32 + (128 * 8,
+	)
+	heat -= int16(screenHeight-z) * cooling
+	if heat &lt; 0 {
+		heat = 0
+	}
+	return heatMap(heat)
+}</code></pre>
+				</section>
+				<section>
+					<pre><code class="hljs go stretch" style="font-size: 16px">// +build !baremetal
+
+package main
+
+import (
+	"log"
+
+	"github.com/aykevl/tilegraphics/sdlscreen"
+)
+
+var display *sdlscreen.Screen
+
+func init() {
+	const scale = 8
+	var err error
+	display, err = sdlscreen.NewScreen("LED cube", 32*6*scale, 32*scale)
+	if err != nil {
+		log.Fatalln("could not instantiate screen:", err)
+	}
+	display.Scale = scale
+}</code></pre>
+				</section>
+			</div>
+		</div>
+
+		<script src="../lib/reveal.js-3.8.0/js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: '../lib/reveal.js-3.8.0/plugin/markdown/marked.js' },
+					{ src: '../lib/reveal.js-3.8.0/plugin/markdown/markdown.js' },
+					{ src: '../lib/reveal.js-3.8.0/plugin/notes/notes.js', async: true },
+					{ src: '../lib/reveal.js-3.8.0/plugin/highlight/highlight.js', async: true }
+				]
+			});
+		</script>
+	</body>
+</html>
