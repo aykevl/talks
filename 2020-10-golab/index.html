@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<title>GoLab talk</title>
+
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/reset.css">
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/reveal.css">
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/theme/black.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/lib/css/monokai.css">
+
+		<style>
+.reveal pre code {
+	-moz-tab-size: 4;
+	tab-size: 4;
+}
+		</style>
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../lib/reveal.js-3.8.0/css/print/pdf.css' : '../lib/reveal.js-3.8.0/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h2>Ayke van Laethem</h2>
+					<p><em>Running Go on the smallest systems with TinyGo</em></p>
+					<p>
+						<i class="fa fa-github"></i> <a href="https://github.com/aykevl">@aykevl</a>
+						<br/>
+						<i class="fa fa-twitter"></i> <a href="https://twitter.com/aykevl">@aykevl</a>
+					</p>
+					<aside class="notes">
+						* I am...
+						* Working on TinyGo...
+						* TinyGo is for...
+					</aside>
+				</section>
+				<section>
+					<h2>Embedded systems?</h2>
+					<p><em>Everything that runs code but does not look like a computer</em></p>
+					<ul>
+						<li>In-car navigation</li>
+						<li>MP3 players</li>
+						<li>Medical devices</li>
+						<li>IoT devices</li>
+						<li>...</li>
+					</ul>
+					<aside class="notes">
+						So what is embedded? Loosely defined concept...
+						I think of it as...
+						Examples are...
+						Too many to sum up here.
+						Common:
+						  * Constrained
+						  * Special purpose
+						  * Safety critical
+						  * Hard to update
+						TinyGo focuses on a more specific category: microcontrollers.
+					</aside>
+				</section>
+				<section>
+					<h2>Microcontrollers</h2>
+					<table>
+						<tr>
+							<th>CPU</th>
+							<td>10MHz-100MHz</td>
+						</tr>
+						<tr>
+							<th>RAM</th>
+							<td>2kB-100kB</td>
+						</tr>
+						<tr>
+							<th>Flash</th>
+							<td>10kB-1MB</td>
+						</tr>
+						<tr>
+							<th>Architecture</th>
+							<td>ARM, AVR, RISC-V, (many others)</td>
+						</tr>
+					</table>
+					<aside class="notes">
+						The kind of MCUs that TinyGo focuses on.
+						Executed directly from flash.
+						Most fall in this range.
+					</aside>
+				</section>
+				<section>
+					<h2>Why Go on Embedded?</h2>
+					<ul>
+						<li class="fragment">Security<sup>[1]</sup></li>
+						<li class="fragment">Ease of programming</li>
+						<li class="fragment">Concurrency</li>
+						<li class="fragment">Testability</li>
+					</ul>
+					<aside class="notes">
+						Security:
+						  Embedded means C
+						  2/3 security problems are memory safety issues (OOB, double free, etc)
+						  IoT means more connected devices
+						Ease of programming:
+						  Cross compiling is a pain
+						  Embedded toolchains are a mess
+						  Lack of standards
+						  - Arduino fixes all of this (hence popular)
+						Concurrency
+						  RTOS replacement
+						    tasks (threading) + mutexes etc
+						    memory management
+						    HAL
+						    network stack
+						  DMA
+						Testability:
+						  I'll get to that...
+					</aside>
+				</section>
+				<section>
+					<h2>Testing</h2>
+				</section>
+				<section>
+					<h2>Ayke van Laethem</h2>
+					<p>
+						<i class="fa fa-github"></i> <a href="https://github.com/aykevl">@aykevl</a>
+						<br/>
+						<i class="fa fa-twitter"></i> <a href="https://twitter.com/aykevl">@aykevl</a>
+					</p>
+					<p>
+						slides: <a href="https://aykevl.nl/talks/2020-10-golab/">aykevl.nl/talks/2020-10-golab</a>
+					</p>
+					<p>
+						Sources:
+						<ol>
+							<li><a href="https://alexgaynor.net/2020/may/27/science-on-memory-unsafety-and-security/">memory unsafety</a></li>
+						</ol>
+					</p>
+				</section>
+			</div>
+		</div>
+
+		<script src="../lib/reveal.js-3.8.0/js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: '../lib/reveal.js-3.8.0/plugin/markdown/marked.js' },
+					{ src: '../lib/reveal.js-3.8.0/plugin/markdown/markdown.js' },
+					{ src: '../lib/reveal.js-3.8.0/plugin/notes/notes.js', async: true },
+					{ src: '../lib/reveal.js-3.8.0/plugin/highlight/highlight.js', async: true }
+				]
+			});
+		</script>
+	</body>
+</html>
