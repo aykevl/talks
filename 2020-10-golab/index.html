@@ -41,11 +41,6 @@
 						<br/>
 						<i class="fa fa-twitter"></i> <a href="https://twitter.com/aykevl">@aykevl</a>
 					</p>
-					<aside class="notes">
-						* I am...
-						* Working on TinyGo...
-						* TinyGo is for...
-					</aside>
 				</section>
 				<section>
 					<h2>Embedded systems?</h2>
@@ -57,18 +52,6 @@
 						<li>IoT devices</li>
 						<li>...</li>
 					</ul>
-					<aside class="notes">
-						So what is embedded? Loosely defined concept...
-						I think of it as...
-						Examples are...
-						Too many to sum up here.
-						Common:
-						  * Constrained
-						  * Special purpose
-						  * Safety critical
-						  * Hard to update
-						TinyGo focuses on a more specific category: microcontrollers.
-					</aside>
 				</section>
 				<section>
 					<h2>Microcontrollers</h2>
@@ -78,23 +61,72 @@
 							<td>10MHz-100MHz</td>
 						</tr>
 						<tr>
-							<th>RAM</th>
-							<td>2kB-100kB</td>
-						</tr>
-						<tr>
 							<th>Flash</th>
 							<td>10kB-1MB</td>
+						</tr>
+						<tr>
+							<th>RAM</th>
+							<td>2kB-100kB</td>
 						</tr>
 						<tr>
 							<th>Architecture</th>
 							<td>ARM, AVR, RISC-V, (many others)</td>
 						</tr>
 					</table>
-					<aside class="notes">
-						The kind of MCUs that TinyGo focuses on.
-						Executed directly from flash.
-						Most fall in this range.
-					</aside>
+				</section>
+				<section>
+					<h2>History</h2>
+					<ul>
+						<li class="fragment">MicroPython
+							<ul>Too slow</ul>
+						</li>
+						<li class="fragment">GCCGO
+							<ul>Too complex</ul>
+						</li>
+						<li class="fragment">TinyGo!</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Other projects</h2>
+					<ul>
+						<li>Emgo</li>
+						<li>gopher-os</li>
+						<li>TamaGo</li>
+					</ul>
+				</section>
+				<section>
+					<h2>How it works - compiler</h2>
+					<div style="text-align: left">
+						<p>Frontend:</p>
+						<ul>
+							<li><code>go/parser</code></li>
+							<li><code>go/types</code></li>
+							<li><code>golang.org/x/tools/go/ssa</code></li></li>
+						</ul>
+					</div>
+					<div style="text-align: left">
+						<p>Optimization:</p>
+						<ul>
+							<li>LLVM, with some TinyGo</li>
+						</ul>
+					</div>
+					<div style="text-align: left">
+						<p>Backend (codegen):</p>
+						<ul>
+							<li>LLVM</li>
+						</ul>
+					</div>
+				</section>
+				<section>
+					<h2>How it works - binary size</h2>
+					<ul>
+						<li class="fragment">garbage collector</li>
+						<li class="fragment">whole program optimization</li>
+						<li class="fragment">package initializers</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Current status</h2>
 				</section>
 				<section>
 					<h2>Why Go on Embedded?</h2>
@@ -104,29 +136,19 @@
 						<li class="fragment">Concurrency</li>
 						<li class="fragment">Testability</li>
 					</ul>
-					<aside class="notes">
-						Security:
-						  Embedded means C
-						  2/3 security problems are memory safety issues (OOB, double free, etc)
-						  IoT means more connected devices
-						Ease of programming:
-						  Cross compiling is a pain
-						  Embedded toolchains are a mess
-						  Lack of standards
-						  - Arduino fixes all of this (hence popular)
-						Concurrency
-						  RTOS replacement
-						    tasks (threading) + mutexes etc
-						    memory management
-						    HAL
-						    network stack
-						  DMA
-						Testability:
-						  I'll get to that...
-					</aside>
 				</section>
 				<section>
 					<h2>Testing</h2>
+				</section>
+				<section>
+					<h2>Demo</h2>
+					<img src="poi.jpg">
+					<ul>
+						<li>nRF52832</li>
+						<li>BMI160 accelerometer + gyroscope</li>
+						<li>SK9822 LED strip (APA102 clone)</li>
+					</ul>
+					<a href="https://github.com/aykevl/things/tree/master/poi">github.com/aykevl/things/tree/master/poi</a>
 				</section>
 				<section>
 					<h2>Ayke van Laethem</h2>
@@ -139,10 +161,8 @@
 						slides: <a href="https://aykevl.nl/talks/2020-10-golab/">aykevl.nl/talks/2020-10-golab</a>
 					</p>
 					<p>
-						Sources:
-						<ol>
-							<li><a href="https://alexgaynor.net/2020/may/27/science-on-memory-unsafety-and-security/">memory unsafety</a></li>
-						</ol>
+						memory safety:<br/>
+						<a style="font-size: 70%" href="https://alexgaynor.net/2020/may/27/science-on-memory-unsafety-and-security/">alexgaynor.net/2020/may/27/science-on-memory-unsafety-and-security/</a>
 					</p>
 				</section>
 			</div>
