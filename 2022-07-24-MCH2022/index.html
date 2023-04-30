@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<title>MCH2022</title>
+
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/reset.css">
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/reveal.css">
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/theme/black.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/lib/css/monokai.css">
+
+		<style>
+.reveal pre code {
+	-moz-tab-size: 4;
+	tab-size: 4;
+}
+		</style>
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../lib/reveal.js-3.8.0/css/print/pdf.css' : '../lib/reveal.js-3.8.0/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h2>Ayke van Laethem</h2>
+					<p><em>Programming microcontrollers in Go using TinyGo</em></p>
+					<p>
+						<i class="fa fa-telegram"></i> <a href="https://telegram.me/aykevl">@aykevl</a>
+						<br/>
+						<i class="fa fa-twitter"></i> <a href="https://twitter.com/aykevl">@aykevl</a>
+						<br/>
+						<i class="fa fa-github"></i> <a href="https://github.com/aykevl">@aykevl</a>
+					</p>
+					<aside class="notes">
+					</aside>
+				</section>
+				<section>
+					<h2>Demo!</h2>
+				</section>
+				<section>
+					<h2>History</h2>
+					<p>"I'll just write a compiler, how hard could it be?"</p>
+				</section>
+				<section>
+					<h2>Status</h2>
+					<table>
+						<tr>
+							<th>Basic features</th>
+							<td><b style="color: #0f0">✔</b></td>
+						</tr>
+						<tr>
+							<th>Garbage collector</th>
+							<td><b style="color: #0f0">✔</b></td>
+						</tr>
+						<tr>
+							<th>Concurrency</th>
+							<td><b style="color: #0f0">✔</b></td>
+						</tr>
+						<tr>
+							<th>Parallelism</th>
+							<td><b style="color: #f00">✘</b> (single core only)</td>
+						</tr>
+						<tr>
+							<th><span style="font-family: monospace">reflect</span>&nbsp;package</th>
+							<td>(partially)</td>
+						</tr>
+						<tr>
+							<th>standard library</th>
+							<td>(partially)</td>
+						</tr>
+						<tr>
+							<th>CGo</th>
+							<td><b style="color: #0f0">✔</b> even when cross compiling!</td>
+						</tr>
+					</table>
+				</section>
+				<section>
+					<h2>Embedded systems?</h2>
+					<p>
+						Roughly:<br/>
+						<em>Everything that runs code but does not look like a computer</em>
+					</p>
+				</section>
+				<section>
+					<h2>Microcontrollers</h2>
+					<table>
+						<tr>
+							<th>Architecture</th>
+							<td>ARM, AVR, RISC-V, Xtensa,&nbsp;... (too many to name)</td>
+						</tr>
+						<tr>
+							<th>RAM</th>
+							<td>1kB-256kB</td>
+						</tr>
+						<tr>
+							<th>Program memory (ROM)</th>
+							<td>8kB-1MB</td>
+						</tr>
+						<tr>
+							<th>Peripherals</th>
+							<td>GPIO, SPI, I2C, timers, ....</td>
+						</tr>
+					</table>
+				</section>
+				<section>
+					<h2>Programming</h2>
+					<ul>
+						<li>C, C++</li>
+						<li><em>sometimes</em> Rust or maybe Ada</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Why not C?</h2>
+					<ul>
+						<li>Memory-unsafe<br/>
+							<em>70% of security vulnerabilities are memory safety bugs (source: Microsoft, Chrome developers)</em></li>
+						</li>
+						<li>Undefined behavior</li>
+						<li>Not portable</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Rust?</h2>
+					<ul>
+						<li>Learning curve</li>
+						<li>Existing code</li>
+						<li>Existing developers</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Compilers!</h2>
+					<pre>
+Your program
+  ~ parser: go/parser ~
+AST
+  ~ type checker: go/types ~
+AST (but now with types!)
+  ~ convert to SSA: golang.org/x/tools/go/ssa ~
+Go SSA form
+  ~ Convert to LLVM IR: TinyGo ~
+LLVM IR
+  ~ Optimize ~
+LLVM IR
+  ~ Write machine code ~
+Object file
+  ~ Linker ~
+Executable file</pre>
+				</section>
+				<section>
+					<h2>Runtime</h2>
+					<ul>
+						<li>Startup code (chip initialization)</li>
+						<li>Goroutine scheduler</li>
+						<li>Channels</li>
+						<li>Garbage collector</li>
+						<li>Time handling (<span style="font-family: monospace">time.Now</span>, <span style="font-family: monospace">time.Sleep</span>)</li>
+						<li>Hashmap implementation</li>
+						<li>...many small runtime functions, like <span style="font-family: monospace">append</span> or <span style="font-family: monospace">defer</span></li>
+					</ul>
+				</section>
+				<section>
+					<h2>Questions?</h2>
+					<ul>
+						<li>
+							Slides:<br/>
+							<a href="https://aykevl.nl/talks/2022-07-24-MCH2022/">https://aykevl.nl/talks/2022-07-24-MCH2022/</a>
+						</li>
+						<li>
+							About the TinyGo simulator:<br/>
+							<a href="https://aykevl.nl/2022/05/tinygo-preview">https://aykevl.nl/2022/05/tinygo-preview</a>
+						</li>
+					</ul>
+				</section>
+			</div>
+		</div>
+
+		<script src="../lib/reveal.js-3.8.0/js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: '../lib/reveal.js-3.8.0/plugin/markdown/marked.js' },
+					{ src: '../lib/reveal.js-3.8.0/plugin/markdown/markdown.js' },
+					{ src: '../lib/reveal.js-3.8.0/plugin/notes/notes.js', async: true },
+					{ src: '../lib/reveal.js-3.8.0/plugin/highlight/highlight.js', async: true }
+				],
+				history: true,
+			});
+		</script>
+	</body>
+</html>
