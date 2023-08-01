@@ -6,6 +6,14 @@ Therefore, it is not meant to replace any of the existing Go compiler, but rathe
 
 In this talk I'm going to focus on embedded systems, not on WebAssembly. I'll start with some history, give some insight into how it works, the current status and what's next for TinyGo.
 
+# Example
+
+Here is an example. This is a very small program, that simply turns an LED on and off. This is like the "hello world" of hardware. The program configures the pin as an output pin, and then turns it on and off in a loop.
+
+As you can see, TinyGo adds a new package to the standard library: the machine package. It implements low-level but portable access to hardware. It already has some things declared as a constant, for example here you can see the `machine.LED` constant declared. Most development boards include one or multiple LEDs that TinyGo will expose in this way.
+
+The machine package will also provide access to other things which embedded programmers are familiar with. These are SPI and I2C for communication between chips on a board, I2S usually used for transferring sound, and of course UART which can be used to transfer log messages from the microcontroller to the host computer for example.
+
 # embedded?
 
 First, let's get some definitions out of the way. What does embedded mean? I personally define it as anything that runs code but does not look like a computer. This is a very broad range of devices.
@@ -49,11 +57,62 @@ Apart from just a compiler, TinyGo also replaces the runtime package. This is wh
 
 So, how does TinyGo lower binary sizes so much?
 
-The first reason is the garbage collector. The main Go implementations use an advanced concurrent garbage collector that is well suited for desktop and server operating systems with virtual memory. Most microcontrollers however are single core and don't have virtual memory, so most of those benefits go away. Instead, TinyGo uses a textbook conservative mark/sweep implementation on most chips. It does not need to worry about growing or shrinking the heap as there is only one program running and it can use all remaining space. This garbage collector is very simple, but good enough for TinyGo and most importantly very small and simple.
+There are a few reasons to this, which I'll explain. In short, it's a smaller garbage collector, whole-program optimization, and a different way of doing package initialization.
 
-The second reason is whole-program optimization. TinyGo compiles and optimizes a whole program at once. This means we can get all the benefits of link-time optimization. It is also very slow to compile for larger programs so I hope to get a more traditional LTO setup in place in the future which should keep most of the benefits of whole-program optimization while increasing compilation speed.
+## Garbage collector
 
-Another big reason is how TinyGo treats package initializers, that means globals and init functions. It tries to initialize them all at compile time instead of at runtime. For example, global map variables would normally be created and initialized at runtime, but in TinyGo this usually happens at compile time. The main benefit here is that if the map is never accessed, it is optimized away. This happens quite often, for example in a package that defines a global map but none of the functions that use the map are called.
+Okay first the garbage collector. In Go, there is no explicit way of freeing memory. And while the specification is silent on this, in practice implementations will use a garbage collector.
+Most tracing garbage collectors work in two phases.
+The first phase marks all reachable objects as reachable. It looks at all global variables and the whole call stack of each goroutine, so each function that is currently running and all functions that will eventually be returned to. And then it continues marking all these variables recursively, so for example for each pointer, slice, map or channel it looks at the values they point to.
+The second phase goes through all the objects on the heap and frees all objects that were not marked in the previous phase.
+
+As you can imagine, this is quite expensive. If you'd have a naïve implementation, you'd need to stop all goroutines, do the scan, free all objets, and then resume all goroutines. This is called a stop-the-world, as the program is stopped entirely.
+The Go runtime is smarter than this. It does almost all of this in parallel and only very briefly stops each goroutine to scan its stack, but otherwise the program continues running.
+
+For TinyGo, this is much too complex: it costs a lot in code size to do this. It also doesn't need all this complexity.
+
+TinyGo uses a very simple implementation in which it simply continues allocating from the heap until it runs out of space, and then it runs the garbage collector. It can of course use all available memory as it is the only program that's running. No need to worry about swapping or an operating system that might kill the process when it runs out of memory.
+
+This garbage collector design is almost a copy of the garbage collector in MicroPython. The implementation is different but I decided to copy the design because I was already familiar with it.
+
+## Whole program optimization
+
+Next up is whole program optimization. TinyGo compiles and optimizes a whole program at once. This means we can get all the benefits of link-time optimization, and some more.
+
+### interfaces
+
+One optimization allowed by this are much more efficient interfaces.
+
+Interface methods in Go are normally implemented in a way that's almost identical to C++ virtual methods.
+
+TinyGo however implements them in a very different way. Imagine you have code like is shown on the slide.
+
+TinyGo transforms the code to basically a type switch. This is only possible because it knows all the possible implementations of Stringer and just checks them all.
+
+#
+
+This might seem like it increases code size, however it also allows many optimizations. For example, it becomes possible to perform escape analysis across interface method calls, to reduce pressure on the garbage collector. It also allows inlining functions if there is only one caller. This means that if there is only one implementation of an interface, all interface method calls will be converted to direct calls, thus making interfaces less expensive.
+
+
+Unfortunately, these kind of whole program optimizations are very slow to compile, especially for larger programs. Therefore, I hope to get a more traditional LTO setup in place in the future which should keep most of the benefits of whole-program optimization while increasing compilation speed.
+
+## package initializers
+
+The last optimization I'm going to talk about are package initializers.
+
+Say you have a global map like you can see here.
+You might expect this to be set at compile time, after all all the values are already known and the compiler could just dump a ready-made map in the binary.
+Unfortunately, this is not the case.
+
+#
+
+This is how the compiler sees it. As you can see, the map is not initialized at compile time but at runtime. There are technical reasons for this in the main Go toolchain, but for TinyGo this behavior is a big problem as this initialization code cannot be optimized away even if the map is never used.
+
+Therefore, TinyGo implements partial evaluation of package initializers.
+
+This means it tries to run all the initialization code at compile time, including map initializers. If it finds a function it cannot interpret at compile time (for example, if it uses some form of I/O) it runs this function at runtime.
+This is difficult to get right and I am aware of bugs in the current implementation, but it is maybe the biggest reason why TinyGo binaries can be so much smaller, therefore it is worth the investment.
+
 
 There are more optimizations but these are some of the main ones.
 
@@ -65,6 +124,43 @@ So how close are we to a usable Go compiler?
 That depends on your use case. It is able to compile most Go code unmodified. However, the big caveat is "most" - many programs won't be able to compile because a dependency of a dependency somewhere uses a standard library package that is not yet supported. Over time, more and more of the Go standard library will become supported while we keep binary size small so this issue should disappear over time.
 
 That said, it already works really well for many smaller programs, which I'll show at the end of this talk.
+
+# Upcoming features
+
+There is one thing which I would like to announce here which I haven't talked about much. You might know that TinyGo now supports IDE integration. But I'm working on making the IDE integration much, much better. See here.
+
+This is a Go program written for TinyGo. As you can see, it blinks an LED like before but this time it does that in a new goroutine.
+
+Further, it also controls an LED strip.
+
+The program here animates some LED strips, by first picking a color using a noise function. Noise functions are often used in computer generated graphics. You could consider this strip a very small image of just 8 pixels total, the 8 LEDs.
+
+After calculating the colors, it writes them to the LED strip and waits a few milliseconds before doing the next update.
+
+Let's flash it to the board to see what it does.
+
+[...]
+
+Okay, great, it works.
+However, flashing to a board can be inconvenient during development. Some boards are slow to program or require manual action to program. So wouldn't it be nice to see what would happen during development?
+
+That's where the preview feature comes in. You might have noticed this button here.
+
+It compiles...
+
+And it runs! This is the same program as on the left but running in simulation.
+
+Okay, what happens when we change something? Let's change a parameter of the noise function.
+
+It compiles...
+
+And it runs again. This time, there is less difference between the LEDs, as if the animation had been stretched out.
+
+How does this magic work?
+
+In this case, there is no emulation. Visual Studio Code has not suddenly gained the ability to simulate this board. Instead, the same program is compiled but using the WebAssembly target of TinyGo. In WebAssembly, the machine package gets a different purpose. All calls to it are propagated and the TinyGo extension for Visual Studio Code intercepts them to show what the board would do.
+
+This is not a perfect simulation of course. For example, it has the speed and resources of a much more powerful computer, so it will not avoid the need for testing on real hardware. But if it works for most quick edit-compile-test cycles, that can be a big productivity boost.
 
 # Why Go on embedded?
 

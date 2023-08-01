@@ -43,6 +43,27 @@
 					</p>
 				</section>
 				<section>
+<pre><font color="#FFFF00">package</font> main
+
+<font color="#FFFF00">import</font> (    
+    <font color="#FF00FF">&quot;machine&quot;</font>    
+    <font color="#FF00FF">&quot;time&quot;</font>    
+)    
+    
+<font color="#FFFF00">func</font> main() {    
+    led := machine.LED    
+    led.Configure(machine.PinConfig{Mode: machine.PinOutput})    
+    <font color="#FFFF00">for</font> {    
+        led.Low()    
+        time.Sleep(time.Millisecond * <font color="#FF00FF">500</font>)    
+    
+        led.High()    
+        time.Sleep(time.Millisecond * <font color="#FF00FF">500</font>)    
+    }    
+}
+</pre>
+				</section>
+				<section>
 					<h2>Embedded systems?</h2>
 					<p><em>Everything that runs code but does not look like a computer</em></p>
 					<ul>
@@ -120,13 +141,70 @@
 				<section>
 					<h2>How it works - binary size</h2>
 					<ul>
-						<li class="fragment">garbage collector</li>
-						<li class="fragment">whole program optimization</li>
-						<li class="fragment">package initializers</li>
+						<li>garbage collector</li>
+						<li>whole program optimization</li>
+						<li>package initializers</li>
 					</ul>
 				</section>
 				<section>
+					<h2>Garbage collector</h2>
+				</section>
+				<section>
+					<h2>Whole program optimization</h2>
+<pre><font color="#FFFF00">type</font> Foo <font color="#87FFAF">string</font>
+<font color="#FFFF00">func</font> (f Foo) String() <font
+color="#87FFAF">string</font> { <font color="#FFFF00">return</font> <font
+																			color="#87FFAF">string</font>(f) }
+                                        
+<font color="#FFFF00">func</font> makeString(s Stringer) <font
+			color="#87FFAF">string</font> {
+    <font color="#FFFF00">return</font> s.String()
+}
+</pre>
+
+					<pre class="fragment"><font color="#FFFF00">func</font> (s Stringer) String() <font
+color="#87FFAF">string</font> {
+    <font color="#FFFF00">switch</font> s := s.(<font
+color="#FFFF00">type</font>) {
+    <font color="#FFFF00">case</font> Foo:
+        <font color="#FFFF00">return</font> s.Foo()
+    <font color="#FFFF00">case</font> Bar:
+        <font color="#FFFF00">return</font> s.Bar()
+    }
+}
+					</pre>
+				</section>
+				<section>
+					<h2>Package initializers</h2>
+					<pre><font color="#FFFF00">var</font> m = <font
+color="#87FFAF">map</font>[<font color="#87FFAF">string</font>]<font
+																 color="#87FFAF">int</font>{
+    <font color="#FF00FF">&quot;foo&quot;</font>: <font
+color="#FF00FF">3</font>,
+    <font color="#FF00FF">&quot;bar&quot;</font>: <font
+color="#FF00FF">5</font>,
+}
+					</pre>
+					<pre class="fragment"><font color="#FFFF00">var</font> m <font
+color="#87FFAF">map</font>[<font color="#87FFAF">string</font>]<font
+																 color="#87FFAF">int</font>
+
+<font color="#FFFF00">func</font> init() {
+    m = <font color="#00FFFF"><b>make</b></font>(<font
+color="#87FFAF">map</font>[<font color="#87FFAF">string</font>]<font
+color="#87FFAF">int</font>)
+    m[<font color="#FF00FF">&quot;foo&quot;</font>] = <font
+color="#FF00FF">3</font>
+    m[<font color="#FF00FF">&quot;bar&quot;</font>] = <font
+						color="#FF00FF">5</font>
+}
+					</pre>
+				</section>
+				<section>
 					<h2>Current status</h2>
+				</section>
+				<section>
+					<h2>Upcoming features</h2>
 				</section>
 				<section>
 					<h2>Why Go on Embedded?</h2>
