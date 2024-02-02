@@ -1,0 +1,199 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<title>FOSDEM 2024</title>
+
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/reset.css">
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/reveal.css">
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/css/theme/black.css">
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="../lib/reveal.js-3.8.0/lib/css/monokai.css">
+
+		<style>
+.reveal pre code {
+	-moz-tab-size: 4;
+	tab-size: 4;
+}
+.reveal section img.plain {
+	background: initial;
+}
+.reveal h1,
+.reveal h2,
+.reveal h3 {
+	text-transform: initial;
+}
+		</style>
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? '../lib/reveal.js-3.8.0/css/print/pdf.css' : '../lib/reveal.js-3.8.0/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h2>Ayke van Laethem</h2>
+					<p><em>Smartwatch firmware in Go</em></p>
+					<p>
+						<i class="fa fa-mastodon"></i> <a href="https://hachyderm.io/aykevl">@ayke@hachyderm.io</a><br/>
+						<i class="fa fa-telegram"></i> <a href="https://telegram.me/aykevl">@aykevl</a><br/>
+						<i class="fa fa-github"></i> <a href="https://github.com/aykevl">@aykevl</a>
+					</p>
+					<aside class="notes">
+						<pre>
+welcome
+creator
+MicroPython LED -> Go compiler
+ambitious: watch
+						</pre>
+					</aside>
+				</section>
+				<section>
+					<h2>PineTime</h2>
+					<img class="plain" src="pinetime-photo.jpg" style="height: 50vh"/>
+					<aside class="notes"><pre>
+(camera)
+Pine64
+few open hardware smartwatches
+					</pre></aside>
+				</section>
+				<!--<section>
+					<h2>Ideal smartwatch</h2>
+					<ul>
+						<li>Hackable</li>
+						<li>Long battery life (weeks)</li>
+						<li>Doesn't require an app</li>
+						<li>Written in Go 😀</li>
+					</ul>
+					<aside class="notes"><pre>
+motivation
+couldn't find -> using PineTime
+					</pre></aside>
+				</section>-->
+				<section>
+					<h2>Hardware</h2>
+					<table style="font-size: 0.8em">
+						<tr>
+							<th>CPU</th>
+							<td>Nordic nRF5832<br/>Cortex-M4 (ARM 32-bit), 64MHz</td>
+						</tr>
+						<tr>
+							<th>RAM</th>
+							<td>64kB</td>
+						</tr>
+						<tr>
+							<th>Flash</th>
+							<td>512kB internal (program)<br>4MB external (data)</td>
+						</tr>
+						<tr>
+							<th>Display</th>
+							<td>240x240 pixels<br>12/16 bits/pixel</td>
+						</tr>
+						<tr>
+							<th>Features</th>
+							<td>Bluetooth (BLE only)<br>Heart rate sensor<br>Accelerometer / step counter</td>
+						</tr>
+					</table>
+					<aside class="notes"><pre>
+working on it -> extra goal
+reference hardware
+make TinyGo better - make it work *well*
+  - speed/responsiveness
+  - efficient / battery life
+  - user friendly / UX
+  - translations
+  - security
+two sides: developer + user
+					</pre></aside>
+				</section>
+				<section>
+					<h2>Board package (HAL)</h2>
+					<p><code>github.com/aykevl/board</code></p>
+					<ul>
+						<li>PineTime</li>
+						<li>GameBoy Advance</li>
+						<li>Gopher Badge</li>
+						<li>Adafruit PyPortal</li>
+						<li>MCH2022 badge</li>
+						<li>Simulator (!)</li>
+					</ul>
+					<aside class="notes"><pre>
+
+					</pre></aside>
+				</section>
+				<section>
+					<section>
+						<h2>Features</h2>
+						<ul>
+							<li>Display + touchscreen</li>
+							<li>Power source (battery percent)</li>
+							<li>Buttons (if present)</li>
+							<li>Sensors</li>
+						</ul>
+					<aside class="notes"><pre>
+
+					</pre></aside>
+					</section>
+				</section>
+				<section>
+					<aside class="notes"><pre>
+asdf
+					</pre></aside>
+					<section>
+						<h2>Simulator</h2>
+						<img class="plain" src="simulator-GopherWatch.png" style="height: 50vh"/>
+					</section>
+					<section>
+						<img class="plain" src="simulator-badge.png" style="height: 60vh"/>
+					</section>
+					<section>
+						<img class="plain" src="simulator-game.png" style="height: 60vh"/>
+					</section>
+				</section>
+				<section>
+					<h2>Display optimizations</h2>
+				</section>
+				<section>
+					<h2>Questions?</h2>
+					<ul>
+						<li>
+							Slides:<br/>
+							<a href="https://aykevl.nl/talks/.../">...</a>
+						</li>
+						<li>
+							Mastodon:<br>
+							@ayke@hachyderm.io
+						</li>
+					</ul>
+				</section>
+			</div>
+		</div>
+
+		<script src="../lib/reveal.js-3.8.0/js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				dependencies: [
+					{ src: '../lib/reveal.js-3.8.0/plugin/markdown/marked.js' },
+					{ src: '../lib/reveal.js-3.8.0/plugin/markdown/markdown.js' },
+					{ src: '../lib/reveal.js-3.8.0/plugin/notes/notes.js', async: true },
+					{ src: '../lib/reveal.js-3.8.0/plugin/highlight/highlight.js', async: true }
+				],
+				history: true,
+			});
+		</script>
+	</body>
+</html>
