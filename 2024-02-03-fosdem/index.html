@@ -128,10 +128,18 @@ two sides: developer + user
 						<li>Simulator (!)</li>
 					</ul>
 					<aside class="notes"><pre>
+first developer side
+exact same API
+flash watch on pyportal
+
+  - Display + touchscreen
+  - Power source
+  - Buttons
+  - Sensors
 
 					</pre></aside>
 				</section>
-				<section>
+				<!--<section>
 					<section>
 						<h2>Features</h2>
 						<ul>
@@ -144,14 +152,18 @@ two sides: developer + user
 
 					</pre></aside>
 					</section>
-				</section>
+				</section>-->
 				<section>
-					<aside class="notes"><pre>
-asdf
-					</pre></aside>
 					<section>
 						<h2>Simulator</h2>
 						<img class="plain" src="simulator-GopherWatch.png" style="height: 50vh"/>
+					<aside class="notes"><pre>
+- natively compiled (no performance testing)
+- display performance *is* simulated
+goal: fast compile/test cycle (except drivers etc)
+demo: simulated watch + Gadgetbridge
+demo: watch on PyPortal
+					</pre></aside>
 					</section>
 					<section>
 						<img class="plain" src="simulator-badge.png" style="height: 60vh"/>
@@ -161,14 +173,129 @@ asdf
 					</section>
 				</section>
 				<section>
-					<h2>Display optimizations</h2>
+					<h2>Configuring simulator</h2>
+					<pre><code class="language-go">
+if board.Name == "simulator" {
+	// Watch dimensions:
+	// diagonal: 33mm, side: 23.3mm or 0.91 inch
+	board.Simulator.WindowTitle = "GopherWatch"
+	board.Simulator.WindowWidth = 240
+	board.Simulator.WindowHeight = 240
+	board.Simulator.WindowPPI = 261
+	board.Simulator.WindowDrawSpeed = time.Second * 12 / 8e6
+}
+					</code></pre>
+					<aside class="notes"><pre>
+...
+					</pre></aside>
+				</section>
+				<section>
+					<h2>Battery life</h2>
+					<ul>
+						<li>Serial port</li>
+						<li>DCDC converter</li>
+						<li>Sleep mode: heart rate sensor, flash</li>
+						<li>External buttons</li>
+						<li>Bluetooth interval</li>
+					</ul>
+					<aside class="notes"><pre>
+just some of the things...
+shared with InfiniTime
+					</pre></aside>
+				</section>
+				<section>
+					<section>
+						<h2>Display hardware</h2>
+						<ul>
+							<li>240x240 pixels</li>
+							<li>16 bits per pixel</li>
+							<li>8Mbit/s</li>
+							<li>= 8.5fps 😭</li>
+						</ul>
+						<aside class="notes"><pre>
+nice display
+slow connection
+tricks:
+ 1. 12 instead of 16 -> 25% faster
+ 2. rectangle
+ 3. fast scrolling - headache
+ 4. DMA
+all except DMA (API)
+						</pre></aside>
+					</section>
+				</section>
+				<section>
+					<h2>Display API</h2>
+					<pre><code class="language-go">import "tinygo.org/x/drivers/pixel"
+						
+type Displayer[T pixel.Color] interface {
+	Size() (int16, int16)
+	DrawBitmap(x, y int16, bitmap pixel.Image[T]) error
+	Display() error
+	Rotation() drivers.Rotation
+}</code></pre>
+					<aside class="notes"><pre>
+main method DrawBitmap
+
+remarks:
+- slice like
+- special pixel types:
+  - RGB444
+  - 9 bits/pixel
+  - maybe HDR?
+- maybe abuse
+
+scroll hardware: type assert
+					</pre></aside>
+				</section>
+				<section>
+					<h2>TinyGL!</h2>
+					<ul>
+						<li>Text</li>
+						<li>VBox container</li>
+						<li>List box</li>
+						<li>Scroll container (with hardware scrolling!)</li>
+						<li>Canvas: rectangle, circle, line, text, image</li>
+						<li>Custom widgets</li>
+					</ul>
+					<aside class="notes"><pre>
+- well known: LVGL
+  - InfiniTime
+  - C, macros
+  - no RGB444
+- Adafruit: slow, RGB565 only
+- tinydraw/tinyfont: same
+
+-> made my own
+works with board
+
+features:
+- draw changed
+- antialiased
+- line -> polygon (blog post)
+					</pre></aside>
+				</section>
+				<section>
+					<h2>Future</h2>
+					<ul>
+						<li>BLE security/privacy</li>
+						<li>translations</li>
+					</ul>
+					<aside class="notes"><pre>
+security: TODO
+translations: look at existing
+					</pre></aside>
 				</section>
 				<section>
 					<h2>Questions?</h2>
 					<ul>
 						<li>
 							Slides:<br/>
-							<a href="https://aykevl.nl/talks/.../">...</a>
+							<a href="https://aykevl.nl/talks/2024-02-03-fosdem/">https://aykevl.nl/talks/2024-02-03-fosdem/</a>
+						</li>
+						<li>
+							Watch source code:<br/>
+							<a href="https://github.com/aykevl/things/tree/master/watch">https://github.com/aykevl/things/tree/master/watch</a>
 						</li>
 						<li>
 							Mastodon:<br>
