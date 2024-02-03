@@ -233,7 +233,7 @@ all except DMA (API)
 				</section>
 				<section>
 					<h2>Display API</h2>
-					<pre style="font-size: 50%"><code class="language-go" data-line-numbers="4,12-14">import "tinygo.org/x/drivers/pixel"
+					<pre style="font-size: 50%"><code class="language-go">import "tinygo.org/x/drivers/pixel"
 						
 type Displayer[T pixel.Color] interface {
 	Size() (int16, int16)
@@ -287,7 +287,8 @@ works with board
 features:
 - draw changed
 - antialiased
-- line -> polygon (blog post)
+
+line -> polygon (blog post)
 					</pre></aside>
 				</section>
 				<section>
