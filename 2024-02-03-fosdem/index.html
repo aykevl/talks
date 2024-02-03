@@ -160,6 +160,7 @@ flash watch on pyportal
 					<aside class="notes"><pre>
 - natively compiled (no performance testing)
 - display performance *is* simulated
+- delve debugging
 goal: fast compile/test cycle (except drivers etc)
 demo: simulated watch + Gadgetbridge
 demo: watch on PyPortal
@@ -186,7 +187,8 @@ if board.Name == "simulator" {
 }
 					</code></pre>
 					<aside class="notes"><pre>
-...
+just import
+optional config
 					</pre></aside>
 				</section>
 				<section>
@@ -195,10 +197,12 @@ if board.Name == "simulator" {
 						<li>Serial port</li>
 						<li>DCDC converter</li>
 						<li>Sleep mode: heart rate sensor, flash</li>
+						<li>Accelerometer/step counter</li>
 						<li>External buttons</li>
 						<li>Bluetooth interval</li>
 					</ul>
 					<aside class="notes"><pre>
+# user experience
 just some of the things...
 shared with InfiniTime
 					</pre></aside>
@@ -213,6 +217,7 @@ shared with InfiniTime
 							<li>= 8.5fps 😭</li>
 						</ul>
 						<aside class="notes"><pre>
+some background: low level
 nice display
 slow connection
 tricks:
@@ -221,18 +226,27 @@ tricks:
  3. fast scrolling - headache
  4. DMA
 all except DMA (API)
+
+-> wrap in portable API
 						</pre></aside>
 					</section>
 				</section>
 				<section>
 					<h2>Display API</h2>
-					<pre><code class="language-go">import "tinygo.org/x/drivers/pixel"
+					<pre style="font-size: 50%"><code class="language-go" data-line-numbers="4,12-14">import "tinygo.org/x/drivers/pixel"
 						
 type Displayer[T pixel.Color] interface {
 	Size() (int16, int16)
 	DrawBitmap(x, y int16, bitmap pixel.Image[T]) error
 	Display() error
 	Rotation() drivers.Rotation
+}
+
+type ScrollableDisplay[T pixel.Color] interface {
+	Displayer[T]
+	SetScrollArea(topFixedArea, bottomFixedArea int16)
+	SetScroll(line int16)
+	StopScroll()
 }</code></pre>
 					<aside class="notes"><pre>
 main method DrawBitmap
@@ -242,7 +256,7 @@ remarks:
 - special pixel types:
   - RGB444
   - 9 bits/pixel
-  - maybe HDR?
+  - 1 bit/pixel: e-paper, oled
 - maybe abuse
 
 scroll hardware: type assert
@@ -257,16 +271,17 @@ scroll hardware: type assert
 						<li>Scroll container (with hardware scrolling!)</li>
 						<li>Canvas: rectangle, circle, line, text, image</li>
 						<li>Custom widgets</li>
+						<li>...still missing many things</li>
 					</ul>
 					<aside class="notes"><pre>
 - well known: LVGL
   - InfiniTime
   - C, macros
   - no RGB444
-- Adafruit: slow, RGB565 only
+- Adafruit: slow, per-pixel, RGB565 only
 - tinydraw/tinyfont: same
 
--> made my own
+-> made TinyGL
 works with board
 
 features:
