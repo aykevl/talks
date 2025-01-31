@@ -49,9 +49,13 @@
 					<aside class="notes" data-markdown>
 						Go: built into language
 
-						Go: since 1.5 default
+						Until Go 1.5 single threaded by default
 
 						TinyGo: not needed, MCUs single core
+
+						---
+
+						This is now changing
 					</aside>
 				</section>
 				<section>
@@ -65,12 +69,14 @@
 						Linux: used by u-root (busybox like system)
 
 						WebAssembly: better than Asyncify  
-						-> unwind & rewind the stack on goroutine switch
+						-> unwind & rewind the stack on goroutine switch  
+						-> use Web Workers instead (also perf)
 
 						baremetal: RP2040 did not exist when I started TinyGo
 
-						next slide:  
-						Linux...
+						---
+
+						Focus on Linux, most applies to all systems
 					</aside>
 				</section>
 				<section>
@@ -80,17 +86,21 @@
 					<p style="font-size: 0.5em">Source:<br><a href="https://eli.thegreenplace.net/2018/measuring-context-switching-and-memory-overheads-for-linux-threads/">https://eli.thegreenplace.net/2018/measuring-context-switching-and-memory-overheads-for-linux-threads/</a></p>
 
 					<aside class="notes" data-markdown>
-						goroutine = thread
+						goroutine = OS thread
 
 						con:
-						- RAM (8k, only virtual)
+						- RAM (8k, rest virtual as-needed)
 						- slower: start goroutine & context switch
 
 						pro: simplicity
-						- direct CGo calls (no stack switch)
-						- direct syscalls (epoll for I/O)
+						- direct CGo calls (no switch to C)
+						- direct syscalls like read/write (epoll for I/O)
 						- preemptive scheduling (goroutines don't hang)
-						- -> much smaller implementation
+						- -> much simpler/smaller implementation
+
+						---
+
+						Lots changes needed to make this work
 					</aside>
 				</section>
 				<section>
@@ -104,9 +114,18 @@
 						<li>misc: <code>println</code>, <code>runtime.NumCPU</code>, etc</li>
 					</ul>
 					<aside class="notes" data-markdown>
+						scheduler: user space -> OS threads
+
 						sync: uses futexes (later)
 
+						GC, chan, sync: come back to it later
+
 						println: lock stdout to avoid interleaving lines
+
+						---
+
+						Go into synchronization primitives later  
+						First: futex! for background
 					</aside>
 				</section>
 				<section>
@@ -280,8 +299,6 @@
 						-> better than spinlock
 
 						Note: WakeAll called only when 0, but spurious wakeups
-
-						Optimization: don't WakeAll when none are waiting
 					</aside>
 				</section>
 
@@ -308,11 +325,17 @@
 						normal: mutex + linked list
 
 						Example: send
+						* lock
 						* if receiver: proceed
 						* if buffer space: store
 						* else:
-						  * add to sender list
+							* add to linked list of senders
 							* pause until woken
+
+						Refactor removed code and made impl smaller in binary size
+
+						---
+						Reeelatively straightforward. Select more complex
 					</aside>
 				</section>
 
@@ -352,9 +375,8 @@
 					<h2>Garbage collector</h2>
 					<p>Mark phase:</p>
 					<ol>
-						<li>Send POSIX signal to every other thread</li>
-						<li>Scan current stack</li>
-						<li>Wait for other threads to finish scanning their stack</li>
+						<li>Send POSIX signal to every other thread to pause</li>
+						<li>Scan all goroutine stacks</li>
 						<li>Scan globals</li>
 						<li>Allow other threads to continue</li>
 					</ol>
@@ -393,16 +415,19 @@
 						</tr>
 					</table>
 					<aside class="notes" data-markdown>
+						See:  
+						Mandelbrot renderer on the Gopher Badge  
+						Parallel makes it 30% faster
+
 						Also embedded:  
 						run scheduler on both cores
-
-						Mandelbrot renderer on the Gopher Badge
 
 						demo?
 
 						---
 
-						Need to implement the same futex
+						Need to implement the same futex  
+						-> same impl of synchronization primitives
 					</aside>
 				</section>
 
@@ -417,8 +442,8 @@
 
 						func (f *Futex) Wait(expected uint32) {
 							spinlockTake()
-							if f.Uint32.Load() == cmp {
-								f.waiters.Push(Current())
+							if f.Load() == cmp {
+								f.waiters.Push(currentGoroutine())
 								spinlockRelease()
 								Pause()
 							} else {
@@ -460,6 +485,12 @@
 					<aside class="notes" data-markdown>
 						Where we are today.  
 						Still a lot to do
+
+						Most concurrency primitives merged
+
+						* Linux: basically ready
+						* MacOS: similar, almost ready
+						* baremetal: needs cleaning up and refactoring
 					</aside>
 				</section>
 
