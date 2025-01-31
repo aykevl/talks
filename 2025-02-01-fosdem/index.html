@@ -1,0 +1,398 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<title>FOSDEM 2025</title>
+
+		<link rel="stylesheet" href="../lib/reveal.js-2025-01-30/dist/reset.css">
+		<link rel="stylesheet" href="../lib/reveal.js-2025-01-30/dist/reveal.css">
+		<link rel="stylesheet" href="../lib/reveal.js-2025-01-30/dist/theme/black.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="../lib/reveal.js-2025-01-30/plugin/highlight/monokai.css">
+
+		<script src="https://kit.fontawesome.com/83ed4ad257.js" crossorigin="anonymous" defer></script>
+
+		<style>
+.reveal pre code {
+	-moz-tab-size: 4;
+	tab-size: 4;
+	max-height: initial;
+}
+.reveal h1,
+.reveal h2,
+.reveal h3 {
+	text-transform: initial;
+}
+		</style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h2>Ayke van Laethem</h2>
+					<p><em>Implementing parallelism</em></p>
+					<p style="font-size: 80%"><em>How we added threading and multicore support to TinyGo</em></p>
+					<p>
+						<i class="fa-brands fa-mastodon"></i> <a href="https://hachyderm.io/aykevl">@ayke@hachyderm.io</a><br/>
+						<i class="fa-brands fa-telegram"></i> <a href="https://telegram.me/aykevl">@aykevl</a><br/>
+						<i class="fa-brands fa-github"></i> <a href="https://github.com/aykevl">@aykevl</a>
+					</p>
+					<aside class="notes" data-markdown>
+						thank you
+					</aside>
+				</section>
+				<section>
+					<h2>Concurrency != parallelism</h2>
+					<aside class="notes" data-markdown>
+						Go: built into language
+
+						Go: since 1.5 default
+
+						TinyGo: not needed, MCUs single core
+					</aside>
+				</section>
+				<section>
+					<h2>Why now in TinyGo?</h2>
+					<ul>
+						<li>Linux</li>
+						<li>WebAssembly</li>
+						<li>Baremetal (RP2040)</li>
+					</ul>
+					<aside class="notes" data-markdown>
+						Linux: used by u-root (busybox like system)
+
+						WebAssembly: better than Asyncify  
+						-> unwind & rewind the stack on goroutine switch
+
+						baremetal: RP2040 did not exist when I started TinyGo
+
+						next slide:  
+						Linux...
+					</aside>
+				</section>
+				<section>
+					<h2>1:1 threading?</h2>
+					<img src="plot-launch-switch.png" style="height: 40vh">
+
+					<p style="font-size: 0.5em">Source:<br><a href="https://eli.thegreenplace.net/2018/measuring-context-switching-and-memory-overheads-for-linux-threads/">https://eli.thegreenplace.net/2018/measuring-context-switching-and-memory-overheads-for-linux-threads/</a></p>
+
+					<aside class="notes" data-markdown>
+						goroutine = thread
+
+						con:
+						- RAM (8k, only virtual)
+						- start goroutine
+						- context switch
+
+						pro: simplicity
+						- direct CGo calls (no stack switch)
+						- direct syscalls (epoll for I/O)
+						- preemptive scheduling (goroutines don't hang)
+						- much smaller implementation
+					</aside>
+				</section>
+				<section>
+					<h2>What needs to change?</h2>
+					<ul>
+						<li>scheduler</li>
+						<li>garbage collector</li>
+						<li><code>chan</code>, <code>select</code></li>
+						<li>package <code>sync</code></li>
+						<li>package <code>sync/atomic</code></li>
+						<li>misc: <code>println</code>, <code>runtime.NumCPU</code>, etc</li>
+					</ul>
+				</section>
+				<section>
+					<h2>Futex!</h2>
+					<p>What even is a futex?</p>
+					<aside class="notes" data-markdown>
+						"Fast userspace mutex"  
+						syscall: not fast, not userspace
+
+						Building block of concurrency primitives.  
+						-> to build mutex, semaphore, WaitGroup, channels
+					</aside>
+				</section>
+				<section>
+					<h2>Futex API</h2>
+					<ul style="font-size: 70%">
+						<li><code>wait(address *atomic.Uint32, expected uint32)</code></li>
+						<li><code>wakeOne(address *atomic.Uint32)</code></li>
+						<li><code>wakeAll(address *atomic.Uint32)</code></li>
+					</ul>
+
+					<pre><code class="language-go" data-trim style="font-size: 75%">
+						// In the kernel:
+						var waitingThreads = make(map[*atomic.Uint32][]*OSThread)
+
+						func wait(address *atomic.Uint32, expected uint32) {
+							// do atomically:
+							if address.Load() == expected {
+								waitingThreads[address] = append(waitingThreads[address], currentThread())
+								// and now wait
+							}
+						}
+					</code></pre>
+					<aside class="notes" data-markdown>
+						2 or 3 calls depending on how you count
+
+						OS internal hashmap
+
+						Note: not waiting for value change!
+
+						Every OS different...
+					</aside>
+				</section>
+
+				<!--<section>
+					<h2>Futex pseudocode</h2>
+
+					<pre><code class="language-go" data-trim>
+						type Futex struct {
+							atomic.Uint32
+						}
+
+						func (f *Futex) Wait(expected uint32) {
+							if f.Load() == expected {
+								// blocks here until woken by Wake()
+							}
+						}
+
+						func (f *Futex) Wake() {
+							// wakes 
+						}
+					</code></pre>
+				</section>-->
+
+
+				<section>
+					<table style="font-size: 80%">
+						<thead>
+							<tr>
+								<th>Platform</th>
+								<th>API</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Linux</td>
+								<td>see <code>futex(2)</code></td>
+							</tr>
+							<tr>
+								<td>MacOS</td>
+								<td><code>__ulock_wait2</code><br><code>__ulock_wake</code></coce></td>
+							</tr>
+							<tr>
+								<td>Windows</td>
+								<td><code>WaitOnAddress</code><br><code>WakeByAddressSingle</code><br><code>WakeByAddressAll</code></td>
+							</tr>
+							<tr>
+								<td>WebAssembly</td>
+								<td><code>memory.atomic.wait</code><br><code>memory.atomic.notify</code></td>
+							</tr>
+						</tbody>
+					</table>
+					<p style="font-size: 80%">More information:<br><a href="https://outerproduct.net/futex-dictionary.html">https://outerproduct.net/futex-dictionary.html</a></p>
+				</section>
+
+				<section>
+					<h2>Wrapped futex (TinyGo)</h2>
+					<pre><code class="language-go" data-trim>
+						type Futex struct {
+							atomic.Uint32
+						}
+
+						func (f *Futex) Wait(expected uint32) {
+							wait(&f.Uint32, expected)
+						}
+
+						func (f *Futex) Wake() {
+							wakeOne(&f.Uint32)
+						}
+
+						func (f *Futex) WakeAll() {
+							wakeAll(&f.Uint32)
+						}
+					</code></pre>
+					<aside class="notes" data-markdown>
+						Make nicer for the next slide
+					</aside>
+				</section>
+
+				<section>
+					<p><code>sync.WaitGroup</code></p>
+					<pre><code class="language-go" data-trim>
+						type WaitGroup struct {
+							futex task.Futex // wrapped atomic.Uint32
+						}
+
+						func (wg *WaitGroup) Add(delta int) {
+							if wg.futex.Add(uint32(delta)) == 0 {
+								wg.futex.WakeAll()
+							}
+						}
+
+						func (wg *WaitGroup) Wait() {
+							for {
+								counter := wg.futex.Load()
+								if counter == 0 { break }
+								wg.futex.Wait(counter)
+							}
+						}
+
+						func (wg *WaitGroup) Done() {
+							wg.Add(-1)
+						}
+					</code></pre>
+					<aside class="notes" data-markdown>
+						- skipped overflow checks
+						- Go is different
+					</aside>
+				</section>
+
+				<section>
+					<h2>Channels</h2>
+
+					<pre><code class="language-go" data-trim data-line-numbers="1,2,4,10-12,14">
+						// The runtime implementation of the Go 'chan' type.
+						type channel struct {
+							closed       bool
+							selectLocked bool
+							elementSize  uintptr
+							bufCap       uintptr // 'cap'
+							bufLen       uintptr // 'len'
+							bufHead      uintptr
+							bufTail      uintptr
+							senders      chanQueue
+							receivers    chanQueue
+							lock         task.PMutex
+							buf          unsafe.Pointer
+						}
+					</code></pre>
+					<aside class="notes" data-markdown>
+						normal: mutex + linked list
+					</aside>
+				</section>
+
+				<section>
+					<h2><code>select</code></h2>
+
+					<pre><code class="language-go" data-trim="">
+						var chan1 = make(chan int)
+						var chan2 = make(chan int)
+
+						func foo() {
+							select {
+								case <-chan1:
+								case chan2 <- 1: // deadlock!
+							}
+						}
+
+						func bar() {
+							select {
+								case chan2 <- 1:
+								case <-chan1: // deadlock!
+							}
+						}
+					</code></pre>
+					<aside class="notes" data-markdown>
+						need to lock every channel
+
+						can lead to deadlock
+
+						solution: global mutex
+					</aside>
+				</section>
+
+				<section>
+					<h2>Garbage collector</h2>
+					<p>Mark phase:</p>
+					<ol>
+						<li>Send POSIX signal to every other thread</li>
+						<li>Scan current stack</li>
+						<li>Wait for other threads to finish scanning their stack</li>
+						<li>Scan globals</li>
+						<li>Allow other threads to continue</li>
+					</ol>
+					<aside class="notes" data-markdown>
+						TinyGo: mark and sweep
+
+						mark: mark all allocated objects that are in use  
+						sweep: free all the unmarked objects
+
+						Singlethreaded: simple, do when run out of memory  
+						Multithreaded: lock while allocating, STW while marking
+					</aside>
+				</section>
+
+				<section>
+					<h2>RP2040</h2>
+					<table>
+						<tr>
+							<th>Before</th>
+							<th>After</th>
+						</tr>
+						<tr>
+							<td>
+								<video autoplay width="300vw" loop src="mandelbrot-before.mp4"></video>
+							</td>
+							<td>
+								<video autoplay width="300vw" loop src="mandelbrot-after.mp4"></video>
+							</td>
+						</tr>
+					</table>
+					<aside class="notes" data-markdown>
+						Also embedded:  
+						run scheduler on both cores
+
+						Mandelbrot renderer on the Gopher Badge
+
+						demo?
+					</aside>
+				</section>
+
+				<section>
+					<h2>Future work</h2>
+
+					<ul>
+						<li>Clean up and merge!</li>
+						<li>WebAssembly threads support</li>
+						<li>ESP32 support</li>
+						<li>Performance improvements</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Questions?</h2>
+					Slides:<br/>
+					<a href="https://aykevl.nl/talks/2025-02-01-fosdem/">https://aykevl.nl/talks/2025-02-01-fosdem/</a>
+					<p>
+						How to find me:<br>
+						<i class="fa-brands fa-mastodon"></i> <a href="https://hachyderm.io/aykevl">@ayke@hachyderm.io</a><br/>
+						<i class="fa-brands fa-telegram"></i> <a href="https://telegram.me/aykevl">@aykevl</a><br/>
+						<i class="fa-brands fa-github"></i> <a href="https://github.com/aykevl">@aykevl</a>
+					</p>
+				</section>
+			</div>
+		</div>
+
+		<script src="../lib/reveal.js-2025-01-30/dist/reveal.js"></script>
+		<script src="../lib/reveal.js-2025-01-30/plugin/notes/notes.js"></script>
+		<script src="../lib/reveal.js-2025-01-30/plugin/markdown/markdown.js"></script>
+		<script src="../lib/reveal.js-2025-01-30/plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>
