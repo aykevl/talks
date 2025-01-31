@@ -355,6 +355,37 @@
 				</section>
 
 				<section>
+					<h2>Baremetal futex?</h2>
+					<pre><code class="language-go" data-trim>
+						type Futex struct {
+							atomic.Uint32
+
+							waiters Stack // linked list of waiting goroutines
+						}
+
+						func (f *Futex) Wait(expected uint32) {
+							spinlockTake()
+							if f.Uint32.Load() == cmp {
+								f.waiters.Push(Current())
+								spinlockRelease()
+								Pause()
+							} else {
+								spinlockRelease()
+							}
+						}
+
+						func (f *Futex) Wake() {
+							spinlockTake()
+							if t := f.waiters.Pop(); t != nil {
+								scheduleGoroutine(t)
+							}
+							spinlockRelease()
+						}
+						
+					</code></pre>
+				</section>
+
+				<section>
 					<h2>Future work</h2>
 
 					<ul>
