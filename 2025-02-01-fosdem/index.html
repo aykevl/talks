@@ -84,14 +84,13 @@
 
 						con:
 						- RAM (8k, only virtual)
-						- start goroutine
-						- context switch
+						- slower: start goroutine & context switch
 
 						pro: simplicity
 						- direct CGo calls (no stack switch)
 						- direct syscalls (epoll for I/O)
 						- preemptive scheduling (goroutines don't hang)
-						- much smaller implementation
+						- -> much smaller implementation
 					</aside>
 				</section>
 				<section>
@@ -104,6 +103,11 @@
 						<li>package <code>sync/atomic</code></li>
 						<li>misc: <code>println</code>, <code>runtime.NumCPU</code>, etc</li>
 					</ul>
+					<aside class="notes" data-markdown>
+						sync: uses futexes (later)
+
+						println: lock stdout to avoid interleaving lines
+					</aside>
 				</section>
 				<section>
 					<h2>Futex!</h2>
@@ -114,6 +118,8 @@
 
 						Building block of concurrency primitives.  
 						-> to build mutex, semaphore, WaitGroup, channels
+
+						Fast (userspace) if uncontended, fallback if contended
 					</aside>
 				</section>
 				<section>
@@ -139,7 +145,8 @@
 					<aside class="notes" data-markdown>
 						2 or 3 calls depending on how you count
 
-						OS internal hashmap
+						OS internal hashmap  
+						address used as key
 
 						Note: not waiting for value change!
 
@@ -196,6 +203,17 @@
 						</tbody>
 					</table>
 					<p style="font-size: 80%">More information:<br><a href="https://outerproduct.net/futex-dictionary.html">https://outerproduct.net/futex-dictionary.html</a></p>
+					<aside class="notes" data-markdown>
+						Linux: overloaded syscall
+
+						MacOS: used inside C++ std lib
+
+						WebAssembly: subset of all OSes
+
+						---
+
+						In TinyGo wrapped nice API
+					</aside>
 				</section>
 
 				<section>
@@ -218,7 +236,10 @@
 						}
 					</code></pre>
 					<aside class="notes" data-markdown>
-						Make nicer for the next slide
+						Embed atomic uint32  
+						-> superset of atomic variable
+
+						Same API as before
 					</aside>
 				</section>
 
@@ -226,7 +247,7 @@
 					<p><code>sync.WaitGroup</code></p>
 					<pre><code class="language-go" data-trim>
 						type WaitGroup struct {
-							futex task.Futex // wrapped atomic.Uint32
+							futex Futex
 						}
 
 						func (wg *WaitGroup) Add(delta int) {
@@ -250,13 +271,24 @@
 					<aside class="notes" data-markdown>
 						- skipped overflow checks
 						- Go is different
+
+						standard methods: Add, Wait, Done  
+						Done wrapper for Add
+
+						Add: ...  
+						Wait: waits for value to become zero
+						-> better than spinlock
+
+						Note: WakeAll called only when 0, but spurious wakeups
+
+						Optimization: don't WakeAll when none are waiting
 					</aside>
 				</section>
 
 				<section>
 					<h2>Channels</h2>
 
-					<pre><code class="language-go" data-trim data-line-numbers="1,2,4,10-12,14">
+					<pre><code class="language-go" data-trim data-line-numbers="1,2,10-12,14">
 						// The runtime implementation of the Go 'chan' type.
 						type channel struct {
 							closed       bool
@@ -274,6 +306,13 @@
 					</code></pre>
 					<aside class="notes" data-markdown>
 						normal: mutex + linked list
+
+						Example: send
+						* if receiver: proceed
+						* if buffer space: store
+						* else:
+						  * add to sender list
+							* pause until woken
 					</aside>
 				</section>
 
@@ -300,6 +339,8 @@
 					</code></pre>
 					<aside class="notes" data-markdown>
 						need to lock every channel
+						* check status
+						* add to senders/receivers linked list
 
 						can lead to deadlock
 
@@ -320,11 +361,18 @@
 					<aside class="notes" data-markdown>
 						TinyGo: mark and sweep
 
+						stop the world  
 						mark: mark all allocated objects that are in use  
-						sweep: free all the unmarked objects
+						sweep: free all the unmarked objects  
+						resume world
 
 						Singlethreaded: simple, do when run out of memory  
 						Multithreaded: lock while allocating, STW while marking
+
+						---
+
+						Those were the major things on Linux.  
+						Also embedded, RP2040
 					</aside>
 				</section>
 
@@ -351,6 +399,10 @@
 						Mandelbrot renderer on the Gopher Badge
 
 						demo?
+
+						---
+
+						Need to implement the same futex
 					</aside>
 				</section>
 
@@ -383,6 +435,17 @@
 						}
 						
 					</code></pre>
+					<aside class="notes" data-markdown>
+						This time, TinyGo *is* the OS
+
+						Keep atomic uint32, add list of waiting tasks
+
+						spinlock = HW spinlock
+
+						(explanation of code)
+
+						Insight: same API on embedded -> led to me using it as a basis for parallelism in TinyGo
+					</aside>
 				</section>
 
 				<section>
@@ -394,6 +457,10 @@
 						<li>ESP32 support</li>
 						<li>Performance improvements</li>
 					</ul>
+					<aside class="notes" data-markdown>
+						Where we are today.  
+						Still a lot to do
+					</aside>
 				</section>
 
 				<section>
