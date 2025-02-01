@@ -114,11 +114,13 @@
 						<li>misc: <code>println</code>, <code>runtime.NumCPU</code>, etc</li>
 					</ul>
 					<aside class="notes" data-markdown>
-						scheduler: user space -> OS threads
+						scheduler: user space -> thread
+
+						GC: send each thread POSIX signal to pause
 
 						sync: uses futexes (later)
 
-						GC, chan, sync: come back to it later
+						chan, sync: come back to it later
 
 						println: lock stdout to avoid interleaving lines
 
@@ -263,6 +265,48 @@
 				</section>
 
 				<section>
+					<h2>Baremetal futex?</h2>
+					<pre><code class="language-go" data-trim>
+						type Futex struct {
+							atomic.Uint32
+
+							waiters Stack // linked list of waiting goroutines
+						}
+
+						func (f *Futex) Wait(expected uint32) {
+							spinlockTake()
+							if f.Load() == cmp {
+								f.waiters.Push(currentGoroutine())
+								spinlockRelease()
+								Pause()
+							} else {
+								spinlockRelease()
+							}
+						}
+
+						func (f *Futex) Wake() {
+							spinlockTake()
+							if t := f.waiters.Pop(); t != nil {
+								scheduleGoroutine(t)
+							}
+							spinlockRelease()
+						}
+						
+					</code></pre>
+					<aside class="notes" data-markdown>
+						Baremetal: same Go API
+
+						This time, TinyGo *is* the OS
+
+						Keep atomic uint32, add list of waiting tasks
+
+						spinlock = HW spinlock
+
+						(explanation of code)
+					</aside>
+				</section>
+
+				<section>
 					<p><code>sync.WaitGroup</code></p>
 					<pre><code class="language-go" data-trim>
 						type WaitGroup struct {
@@ -332,8 +376,6 @@
 							* add to linked list of senders
 							* pause until woken
 
-						Refactor removed code and made impl smaller in binary size
-
 						---
 						Reeelatively straightforward. Select more complex
 					</aside>
@@ -372,33 +414,6 @@
 				</section>
 
 				<section>
-					<h2>Garbage collector</h2>
-					<p>Mark phase:</p>
-					<ol>
-						<li>Send POSIX signal to every other thread to pause</li>
-						<li>Scan all goroutine stacks</li>
-						<li>Scan globals</li>
-						<li>Allow other threads to continue</li>
-					</ol>
-					<aside class="notes" data-markdown>
-						TinyGo: mark and sweep
-
-						stop the world  
-						mark: mark all allocated objects that are in use  
-						sweep: free all the unmarked objects  
-						resume world
-
-						Singlethreaded: simple, do when run out of memory  
-						Multithreaded: lock while allocating, STW while marking
-
-						---
-
-						Those were the major things on Linux.  
-						Also embedded, RP2040
-					</aside>
-				</section>
-
-				<section>
 					<h2>RP2040</h2>
 					<table>
 						<tr>
@@ -423,53 +438,6 @@
 						run scheduler on both cores
 
 						demo?
-
-						---
-
-						Need to implement the same futex  
-						-> same impl of synchronization primitives
-					</aside>
-				</section>
-
-				<section>
-					<h2>Baremetal futex?</h2>
-					<pre><code class="language-go" data-trim>
-						type Futex struct {
-							atomic.Uint32
-
-							waiters Stack // linked list of waiting goroutines
-						}
-
-						func (f *Futex) Wait(expected uint32) {
-							spinlockTake()
-							if f.Load() == cmp {
-								f.waiters.Push(currentGoroutine())
-								spinlockRelease()
-								Pause()
-							} else {
-								spinlockRelease()
-							}
-						}
-
-						func (f *Futex) Wake() {
-							spinlockTake()
-							if t := f.waiters.Pop(); t != nil {
-								scheduleGoroutine(t)
-							}
-							spinlockRelease()
-						}
-						
-					</code></pre>
-					<aside class="notes" data-markdown>
-						This time, TinyGo *is* the OS
-
-						Keep atomic uint32, add list of waiting tasks
-
-						spinlock = HW spinlock
-
-						(explanation of code)
-
-						Insight: same API on embedded -> led to me using it as a basis for parallelism in TinyGo
 					</aside>
 				</section>
 
