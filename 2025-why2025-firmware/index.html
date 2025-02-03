@@ -1,0 +1,132 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+
+		<title>WHY2025</title>
+
+		<link rel="stylesheet" href="../lib/reveal.js-2025-01-30/dist/reset.css">
+		<link rel="stylesheet" href="../lib/reveal.js-2025-01-30/dist/reveal.css">
+		<link rel="stylesheet" href="../lib/reveal.js-2025-01-30/dist/theme/black.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="../lib/reveal.js-2025-01-30/plugin/highlight/monokai.css">
+
+		<script src="https://kit.fontawesome.com/83ed4ad257.js" crossorigin="anonymous" defer></script>
+
+		<style>
+.reveal pre code {
+	-moz-tab-size: 4;
+	tab-size: 4;
+	max-height: initial;
+}
+.reveal h1,
+.reveal h2,
+.reveal h3 {
+	text-transform: initial;
+}
+		</style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<h2>Ayke van Laethem</h2>
+					<p><em>How to build microcontroller firmware from scratch</em></p>
+					<p>
+						<i class="fa-brands fa-mastodon"></i> <a href="https://hachyderm.io/aykevl">@ayke@hachyderm.io</a><br/>
+						<i class="fa-brands fa-telegram"></i> <a href="https://telegram.me/aykevl">@aykevl</a><br/>
+						<i class="fa-brands fa-github"></i> <a href="https://github.com/aykevl">@aykevl</a>
+					</p>
+					<aside class="notes" data-markdown>
+						thank you
+					</aside>
+				</section>
+
+				<section>
+					<h2>Baremetal programming</h2>
+
+					<ul>
+						<li>Linker scripts</li>
+						<li>How to read datasheets</li>
+						<li>Interrupt vectors</li>
+						<li>Blinking LEDs</li>
+					</ul>
+					<aside class="notes" data-markdown>
+						Linker scripts: tells which bytes go where in the binary
+
+						How to read datasheet: so you as a programmer know what to tell the linker
+
+						Interrupt vectors: useful to know  
+						also: reset is also interrupt vector
+
+						Blinking LEDs: hello world of electronics  
+						know that everything is working
+
+						Not much about C
+					</aside>
+				</section>
+
+				<section>
+					<h2>Who am I?</h2>
+					<ul>
+						<li>MicroPython contributor (long ago)</li>
+						<li>TinyGo maintainer</li>
+						<li>Maker of blinky jewelry</li>
+					</ul>
+					<aside class="notes" data-markdown>
+						* Contributed to MicroPython, too slow for LED  
+						  learned lots about baremetal programming
+						* TinyGo, primary thing now
+						  Go compiler (same language), targetting baremetal/wasm/OS
+
+						Not here to talk about TinyGo
+					</aside>
+				</section>
+
+				<section>
+					<h2></h2>
+
+					(demo: Arduino Uno with just blinking LED without interrupt vector)
+
+					<section>
+						foo
+					</section>
+				</section>
+
+				<section>
+					<h2>...</h2>
+				</section>
+
+				<section>
+					<h2>Questions?</h2>
+					Slides:<br/>
+					TODO
+					<p>
+						How to find me:<br>
+						<i class="fa-brands fa-mastodon"></i> <a href="https://hachyderm.io/aykevl">@ayke@hachyderm.io</a><br/>
+						<i class="fa-brands fa-telegram"></i> <a href="https://telegram.me/aykevl">@aykevl</a><br/>
+						<i class="fa-brands fa-github"></i> <a href="https://github.com/aykevl">@aykevl</a>
+					</p>
+				</section>
+			</div>
+		</div>
+
+		<script src="../lib/reveal.js-2025-01-30/dist/reveal.js"></script>
+		<script src="../lib/reveal.js-2025-01-30/plugin/notes/notes.js"></script>
+		<script src="../lib/reveal.js-2025-01-30/plugin/markdown/markdown.js"></script>
+		<script src="../lib/reveal.js-2025-01-30/plugin/highlight/highlight.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				hash: true,
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+			});
+		</script>
+	</body>
+</html>
