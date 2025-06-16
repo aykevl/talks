@@ -156,15 +156,16 @@
 					<li><code>wakeAll(address *atomic.Uint32)</code></li>
 				</ul>
 
-				<pre><code class="language-go" data-trim style="font-size: 75%">
+				<pre><code class="language-go" data-trim style="font-size: 90%; line-height: 1.2;">
 						// In the kernel:
 						var waitingThreads = make(map[*atomic.Uint32][]*OSThread)
 
 						func wait(address *atomic.Uint32, expected uint32) {
 							// do atomically:
 							if address.Load() == expected {
-								waitingThreads[address] = append(waitingThreads[address], currentThread())
-								// and now wait
+								waitingThreads[address] = append(waitingThreads[address],
+								                                 currentThread())
+								// and now wait until woken
 							}
 						}
 					</code></pre>
@@ -273,7 +274,7 @@
 
 			<section>
 				<h2>Baremetal futex?</h2>
-				<pre><code class="language-go" data-trim>
+				<pre><code class="language-go" data-trim style="font-size: 85%; line-height: 1.2">
 						type Futex struct {
 							atomic.Uint32
 
@@ -452,9 +453,8 @@
 				<h2>Future work</h2>
 
 				<ul>
-					<li>Clean up and merge!</li>
 					<li>WebAssembly threads support</li>
-					<li>ESP32 support</li>
+					<li>ESP32 support (maybe)</li>
 					<li>Performance improvements</li>
 				</ul>
 				<aside class="notes" data-markdown>
@@ -463,9 +463,9 @@
 
 					Most concurrency primitives merged
 
-					* Linux: basically ready
-					* MacOS: similar, almost ready
-					* baremetal: needs cleaning up and refactoring
+					* Linux: done
+					* MacOS: almost done
+					* baremetal: works for the RP2040
 				</aside>
 			</section>
 
