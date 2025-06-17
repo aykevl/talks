@@ -47,6 +47,20 @@
 					thank you
 				</aside>
 			</section>
+
+			<section>
+				<h1>TL;DR</h1>
+				<ul>
+					<li>Multicore support on Linux (threads)</li>
+					<li>Multicore support on baremetal (RP2040, custom scheduler)</li>
+				</ul>
+				<aside class="notes" data-markdown>
+					(slide)
+
+					Here to talk about how I did that.
+				</aside>
+			</section>
+
 			<section>
 				<h2>Concurrency != parallelism</h2>
 				<aside class="notes" data-markdown>
@@ -64,22 +78,18 @@
 			<section>
 				<h2>Why now in TinyGo?</h2>
 				<ul>
-					<li>Linux</li>
-					<li>WebAssembly</li>
-					<li>Baremetal (RP2040)</li>
+					<li>New chips (RP2040)</li>
+					<li>Linux (example: u-root)</li>
+					<li>WebAssembly (stack switching is painful)</li>
 				</ul>
 				<aside class="notes" data-markdown>
-					Linux: used by u-root (busybox like system)
-
-					WebAssembly: better than Asyncify
-					-> unwind & rewind the stack on goroutine switch
-					-> use Web Workers instead (also perf)
-
 					baremetal: RP2040 did not exist when I started TinyGo
 
-					---
+					Linux: used by u-root (busybox like system)
 
-					Focus on Linux, most applies to all systems
+					WebAssembly: better than Asyncify  
+					-> unwind & rewind the stack on goroutine switch  
+					-> use Web Workers instead (also perf)
 				</aside>
 			</section>
 			<section>
@@ -91,6 +101,8 @@
 				</p>
 
 				<aside class="notes" data-markdown>
+					different!
+
 					goroutine = OS thread
 
 					con:
@@ -121,24 +133,21 @@
 				<aside class="notes" data-markdown>
 					scheduler: user space -> thread
 
-					GC: send each thread POSIX signal to pause
+					GC: pause other threads while scanning
 
-					sync: uses futexes (later)
+					sync: obviously
 
-					chan, sync: come back to it later
+					sync/atomic: built into LLVM
 
 					println: lock stdout to avoid interleaving lines
-
-					---
-
-					Go into synchronization primitives later
-					First: futex! for background
 				</aside>
 			</section>
 			<section>
 				<h2>Futex!</h2>
 				<p>What even is a futex?</p>
 				<aside class="notes" data-markdown>
+					to simplify impl of synchronization primitives...
+
 					"Fast userspace mutex"
 					syscall: not fast, not userspace
 
@@ -171,6 +180,8 @@
 					</code></pre>
 				<aside class="notes" data-markdown>
 					2 or 3 calls depending on how you count
+
+					based on atomic instructions
 
 					OS internal hashmap
 					address used as key
@@ -450,18 +461,31 @@
 			</section>
 
 			<section>
+				<h2>Baremetal multicore</h2>
+				<ul>
+					<li>Debug in QEMU!</li>
+					<li>Scheduler: one scheduler per core</li>
+					<li>GC: interrupt every other core (using software interrupt)</li>
+					<li><code>time.Sleep</code>: one core sleeps, others wait until a new task arrives</li>
+				</ul>
+				<aside class="notes" data-markdown>
+					* RISC-V first!  
+					  QEMU VirtIO
+					* RP2040: just hardware specific bits
+				</aside>
+			</section>
+
+			<section>
 				<h2>Future work</h2>
 
 				<ul>
+					<li>MacOS support (almost done)</li>
 					<li>WebAssembly threads support</li>
 					<li>ESP32 support (maybe)</li>
 					<li>Performance improvements</li>
 				</ul>
 				<aside class="notes" data-markdown>
 					Where we are today.
-					Still a lot to do
-
-					Most concurrency primitives merged
 
 					* Linux: done
 					* MacOS: almost done
@@ -479,6 +503,10 @@
 					<i class="fa-brands fa-telegram"></i> <a href="https://telegram.me/aykevl">@aykevl</a><br />
 					<i class="fa-brands fa-github"></i> <a href="https://github.com/aykevl">@aykevl</a>
 				</p>
+			</section>
+
+			<section>
+				<img src="rust-atomics-and-locks.jpg" style="height: 60vh"/>
 			</section>
 		</div>
 	</div>
