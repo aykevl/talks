@@ -354,11 +354,11 @@
 					- skipped overflow checks
 					- Go is different
 
-					standard methods: Add, Wait, Done
+					standard methods: Add, Wait, Done  
 					Done wrapper for Add
 
-					Add: ...
-					Wait: waits for value to become zero
+					Add: ...  
+					Wait: waits for value to become zero  
 					-> better than spinlock
 
 					Note: WakeAll called only when 0, but spurious wakeups
@@ -386,14 +386,6 @@
 					</code></pre>
 				<aside class="notes" data-markdown>
 					normal: mutex + linked list
-
-					Example: send
-					* lock
-					* if receiver: proceed
-					* if buffer space: store
-					* else:
-					* add to linked list of senders
-					* pause until woken
 
 					---
 					Reeelatively straightforward. Select more complex
@@ -486,15 +478,10 @@
 				</ul>
 				<aside class="notes" data-markdown>
 					Where we are today.
-
-					* Linux: done
-					* MacOS: almost done
-					* baremetal: works for the RP2040
 				</aside>
 			</section>
 
 			<section>
-				<h2>Questions?</h2>
 				Slides:<br />
 				<a href="https://aykevl.nl/talks/2025-06-17-gopherconeu/">https://aykevl.nl/talks/2025-06-17-gopherconeu/</a>
 				<p>
