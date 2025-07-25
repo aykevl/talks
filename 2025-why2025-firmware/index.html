@@ -100,7 +100,7 @@
 				</section>
 
 				<section>
-					<h1>Read the manual!</h1>
+					<h1>I/O registers!</h1>
 
 					<img src="avr-ddrb.png"  style="width: 30vw; margin: 0"><br/>
 					<img src="avr-portb.png" style="width: 30vw; margin: 0">
@@ -115,10 +115,10 @@
 				</section>
 
 				<section>
-					<h1>"Hello world"</h1>
+					<h1>Turn on LED</h1>
 
-					<pre><code class="language-c">
-#include &lt;stdint.h>
+					<pre><code class="language-c"
+>#include &lt;stdint.h>
 
 // Memory mapped I/O (values from the datasheet).
 #define PORTB *(volatile uint8_t*)(0x23)
@@ -131,20 +131,19 @@ int main() {
     // wait forever
     while (1) {
     }
-    return 0;
-}
-					</code></pre>
+
+    return 0; // unreachable (satisfy the compiler)
+}</code></pre>
 
 					<aside class="notes" data-markdown>
 					</aside>
 				</section>
 
 				<section>
-					<pre><code class="language-avrasm">
-sbi 0x04, 0   ; set bit 0 in DDRB  (0x24)
+					<pre><code class="language-avrasm"
+>sbi 0x04, 0   ; set bit 0 in DDRB  (0x24)
 sbi 0x03, 0   ; set bit 0 in PORTB (0x23)
-rjmp .-2      ; jump back one instruction (loop)
-					</code></pre>
+rjmp .-2      ; jump back one instruction (loop)</code></pre>
 
 					<aside class="notes" data-markdown>
 						same thing
@@ -167,6 +166,36 @@ rjmp .-2      ; jump back one instruction (loop)
 					<aside class="notes" data-markdown>
 						whole program to turn on LED  
 						just 3 instructions!
+					</aside>
+				</section>
+				
+				<section>
+					<h1>Blink!</h1>
+					<pre><code class="language-c"
+>int main() {
+    DDRB |= 1; // set pin PB0 as an output
+
+    // main loop
+    while (1) {
+        for (long i=1000000; i != 0; i--) {
+            PORTB |= 1; // set pin PB0 high (set bit)
+        }
+        for (long i=1000000; i != 0; i--) {
+            PORTB &= ~1; // set pin PB0 low (clear bit)
+        }
+    }
+
+    return 0;
+}</code></pre>
+
+					<aside class="notes" data-markdown>
+						poor man's delay: set or clear same bit repeatedly
+						
+						skipped first part for clarity
+						
+						loop count experimental  
+						assembly much longer
+						contains CBI instruction to clear that bit
 					</aside>
 				</section>
 
@@ -201,8 +230,7 @@ rjmp .-2      ; jump back one instruction (loop)
 				</section>
 
 				<section>
-					<h1>Program memory</h1>
-					<img src="program-memory.png" style="height: 45vh">
+					<img src="program-memory.png" style="width: 30vw">
 					<aside class="notes" data-markdown>
 						Program memory: same as flash on this chip
 
@@ -212,8 +240,8 @@ rjmp .-2      ; jump back one instruction (loop)
 
 				<section>
 					<h1>Interrupt vector table</h1>
-					<pre><code class="language-avrasm">
-jmp __vector_RESET         ; address 0
+					<pre><code class="language-avrasm"
+>jmp __vector_RESET         ; address 0
 jmp __vector_INT0          ; address 4
 jmp __vector_INT1          ; address 8
 jmp __vector_PCINT0        ; address 12
@@ -223,8 +251,7 @@ jmp __vector_WDT           ; address 24
 jmp __vector_TIMER2_COMPA  ; address 28
 jmp __vector_TIMER2_COMPB  ; address 32
 jmp __vector_TIMER2_OVF    ; address 36
-; etc
-					</code></pre>
+; etc</code></pre>
 				</section>
 
 				<section>
