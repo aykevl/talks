@@ -53,9 +53,9 @@
 						<li><b>Maker of blinky jewelry</b></li>
 					</ul>
 					<aside class="notes" data-markdown>
-						* Contributed to MicroPython, too slow for LED
+						* Contributed to MicroPython, too slow for LED  
 						  learned lots about baremetal programming
-						* TinyGo, primary thing now
+						* TinyGo, primary thing now  
 						  Go compiler (same language), targetting baremetal/wasm/OS
 
 						Not here to talk about TinyGo
@@ -76,10 +76,10 @@
 
 						Linker scripts: tells which bytes go where in the binary
 
-						Interrupt vectors: useful to know
+						Interrupt vectors: useful to know  
 						also: reset is also interrupt vector
 
-						Blinking LEDs: hello world of electronics
+						Blinking LEDs: hello world of electronics  
 						know that everything is working
 
 						Not much about C
@@ -102,7 +102,7 @@
 				<section>
 					<h1>Read the manual!</h1>
 
-					<img src="avr-ddrb.png"  style="width: 30vw; margin: 0">
+					<img src="avr-ddrb.png"  style="width: 30vw; margin: 0"><br/>
 					<img src="avr-portb.png" style="width: 30vw; margin: 0">
 
 					<aside class="notes" data-markdown>
@@ -125,8 +125,8 @@
 #define DDRB  *(volatile uint8_t*)(0x24)
 
 int main() {
-    DDRB  = 0b0000_0001; // set pin PB0 as an output
-    PORTB = 0b0000_0001; // set pin PB0 high
+    DDRB  |= 1; // set pin PB0 as an output
+    PORTB |= 1; // set pin PB0 high
 
     // wait forever
     while (1) {
@@ -141,14 +141,32 @@ int main() {
 
 				<section>
 					<pre><code class="language-avrasm">
-ldi	r24, 0x1  ; load value 1&lt;&lt;4 into register 24
-out	0x4, r24  ; write register 24 to 0x4
-out	0x3, r24  ; write register 24 to 0x5
+sbi 0x04, 0   ; set bit 0 in DDRB  (0x24)
+sbi 0x03, 0   ; set bit 0 in PORTB (0x23)
 rjmp .-2      ; jump back one instruction (loop)
 					</code></pre>
 
 					<aside class="notes" data-markdown>
 						same thing
+
+						SBI: set a given bit in I/O register - leaves all others unaffected (0 through 7)  
+						special for AVR
+					</aside>
+				</section>
+				
+				<section>
+					[compile, flash]
+
+					<aside class="notes" data-markdown>
+					</aside>
+				</section>
+				
+				<section>
+					[image of Arduino + LED that is on]
+
+					<aside class="notes" data-markdown>
+						whole program to turn on LED  
+						just 3 instructions!
 					</aside>
 				</section>
 
