@@ -33,7 +33,7 @@
 			<div class="slides">
 				<section>
 					<h2>Ayke van Laethem</h2>
-					<p>she/her</p>
+					<p>she/her 🏳️‍⚧️</p>
 					<p><em>Bare metal programming from the ground up</em></p>
 					<p>
 						<i class="fa-brands fa-mastodon"></i> <a href="https://hachyderm.io/aykevl">@ayke@hachyderm.io</a><br/>
@@ -49,16 +49,22 @@
 					<h1>Who am I</h1>
 					<ul>
 						<li><b>MicroPython</b>:<br>&nbsp;&nbsp;worked on nrf5x support long ago</li>
-						<li><b>TinyGo</b>:<br>&nbsp;&nbsp;creator and maintainer</li>
+						<li>
+							<img src="earrings.jpg" width="50%" style="float: right">
+							<b>TinyGo</b>:<br>
+								&nbsp;&nbsp;creator and maintainer
+						</li>
 						<li><b>Maker of blinky jewelry</b></li>
 					</ul>
+						
 					<aside class="notes" data-markdown>
 						* Contributed to MicroPython, too slow for LED  
 						  learned lots about baremetal programming
 						* TinyGo, primary thing now  
-						  Go compiler (same language), targetting baremetal/wasm/OS
+						  Go compiler (same language), targetting baremetal/wasm/OS  
+						  Not here to talk about TinyGo
 
-						Not here to talk about TinyGo
+						also a witch
 					</aside>
 				</section>
 
@@ -96,37 +102,63 @@
 						Simplest possible program?
 
 						blink -> no -> turn
+	
+					</aside>
+				</section>
+				
+				<section>
+					<h1>Arduino Uno</h1>
+					<ul>
+						<li>
+							<img src="arduino.jpg" width="40%" style="float: right">
+							ATmega328</li>
+						<li>20MHz</li>
+						<li>32kB flash, 2kB RAM</li>
+						<li>AVR instruction set</li>
+						<li>Arduino IDE</li>
+					</ul>
+					
+					<aside class="notes" data-markdown>
+						first look: Arduino Uno
+
+						low specs, typical  
+						old chip
+						
+						AVR instruction set specifically made for microcontrollers
+						
+						Has IDE, we'll ignore it
 					</aside>
 				</section>
 
 				<section>
 					<h1>I/O registers!</h1>
 
-					<img src="avr-ddrb.png"  style="width: 30vw; margin: 0"><br/>
-					<img src="avr-portb.png" style="width: 30vw; margin: 0">
+					<img src="avr-ddrb.png"  style="width: 70%; margin: 0"><br/>
+					<img src="avr-portb.png" style="width: 70%; margin: 0">
 
 					<aside class="notes" data-markdown>
-						We need to read the datasheet
+						control pins -> read datasheet
 
 						3 registers, we use 2
+						
+						pin B0, lowest bit  
+						pin 8 on Arduino
 
 						more bits than registers! 8 in register, 6 on hardware
 					</aside>
 				</section>
 
 				<section>
-					<h1>Turn on LED</h1>
-
 					<pre><code class="language-c"
 >#include &lt;stdint.h>
 
 // Memory mapped I/O (values from the datasheet).
-#define PORTB *(volatile uint8_t*)(0x23)
 #define DDRB  *(volatile uint8_t*)(0x24)
+#define PORTB *(volatile uint8_t*)(0x25)
 
 int main() {
-    DDRB  |= 1; // set pin PB0 as an output
-    PORTB |= 1; // set pin PB0 high
+    DDRB  |= 1 &lt;&lt; 5; // set pin PB5 as an output
+    PORTB |= 1 &lt;&lt; 5; // set pin PB5 high
 
     // wait forever
     while (1) {
@@ -141,9 +173,9 @@ int main() {
 
 				<section>
 					<pre><code class="language-avrasm"
->sbi 0x04, 0   ; set bit 0 in DDRB  (0x24)
-sbi 0x03, 0   ; set bit 0 in PORTB (0x23)
-rjmp .-2      ; jump back one instruction (loop)</code></pre>
+>sbi 0x04, 0x5   ; set bit 5 in DDRB  (0x24)
+sbi 0x05, 0x5   ; set bit 5 in PORTB (0x25)
+rjmp .-2        ; jump back to the same instruction (loop)</code></pre>
 
 					<aside class="notes" data-markdown>
 						same thing
@@ -154,12 +186,26 @@ rjmp .-2      ; jump back one instruction (loop)</code></pre>
 				</section>
 				
 				<section>
-					[compile, flash]
+					<pre style="margin: 0; width: 100%; font-size: 0.50em"><code class="language-none" style="white-space: pre-wrap;"
+>$ avr-gcc -c -o firmware.o -Os -mmcu=atmega328p arduino-1.c
+
+$ avr-ld -o firmware.elf firmware.o
+
+$ avrdude -c arduino -p atmega328p -P /dev/ttyACM0 \
+          -U flash:w:firmware.elf:e
+Reading 6 bytes for flash from input file firmware.elf
+Writing 6 bytes to flash
+Writing | ################################################## | 100% 0.04 s
+Reading | ################################################## | 100% 0.02 s
+6 bytes of flash verified
+
+Avrdude done.  Thank you.</code></pre>
 
 					<aside class="notes" data-markdown>
+						some things missing, will come back to later
 					</aside>
 				</section>
-				
+
 				<section>
 					[image of Arduino + LED that is on]
 
@@ -170,22 +216,19 @@ rjmp .-2      ; jump back one instruction (loop)</code></pre>
 				</section>
 				
 				<section>
-					<h1>Blink!</h1>
 					<pre><code class="language-c"
->int main() {
-    DDRB |= 1; // set pin PB0 as an output
+>void _start() {
+    DDRB |= (1&lt;&lt;5); // set pin PB5 as an output
 
     // main loop
     while (1) {
         for (long i=1000000; i != 0; i--) {
-            PORTB |= 1; // set pin PB0 high (set bit)
+            PORTB |= (1&lt;&lt;5); // set pin PB5 high (set bit)
         }
         for (long i=1000000; i != 0; i--) {
-            PORTB &= ~1; // set pin PB0 low (clear bit)
+            PORTB &= ~(1&lt;&lt;5); // set pin PB5 low (clear bit)
         }
     }
-
-    return 0;
 }</code></pre>
 
 					<aside class="notes" data-markdown>
@@ -198,50 +241,58 @@ rjmp .-2      ; jump back one instruction (loop)</code></pre>
 						contains CBI instruction to clear that bit
 					</aside>
 				</section>
-
+				
 				<section>
-					<h1>Reset vector</h1>
-					<img src="reset-1.png">
-					<img src="reset-2.png">
+					[GIF of blinking Arduino]
 				</section>
-
+				
 				<section>
-					<h1>Reset vector</h1>
-					<blockquote>
-						"The lowest addresses in the program memory space are by default defined as the Reset and Interrupt Vectors."
-					</blockquote>
-
-					<p>Translation: the reset handler and the interrupts are defined at the beginning of memory, probably at address zero.</p>
+					<img src="avr-program-memory.png" style="width: 90%">
 				</section>
-
+				
 				<section>
-					<h1>Reset vector</h1>
-					<blockquote>
-						"[...] the Program Counter is vectored to the actual Interrupt Vector in order to execute the interrupt handling routine, [...]"
-					</blockquote>
+					<pre><code class="language-text"
+>MEMORY {
+    FLASH (r) : ORIGIN = 0, LENGTH = 32k
+}
 
-					<p align="left">Translation: the chip jumps to the location in memory where the interrupt is defined.</p>
-
+SECTIONS
+{
+    .text : {
+        *(.text)
+    } > FLASH
+}</code></pre>
 					<aside class="notes" data-markdown>
-						Meaning: on reset, execute from beginning of memory (address 0).
-
-						Other interrupts from address 4, 8, 12, 16, ...
 					</aside>
 				</section>
-
+				
 				<section>
-					<img src="program-memory.png" style="width: 30vw">
-					<aside class="notes" data-markdown>
-						Program memory: same as flash on this chip
+					<pre style="margin: 0; width: 100%; font-size: 0.48em"><code class="language-text" style="white-space: pre-wrap;" data-line-numbers="3"
+>$ avr-gcc -c -o firmware.o -Os -mmcu=atmega328p arduino-2.c
 
-						Starts at address zero.
-					</aside>
+$ avr-ld -o firmware.elf firmware.o -T linkerscript-1.ld
+
+$ avrdude -c arduino -p atmega328p -P /dev/ttyACM0 \
+          -U flash:w:firmware.elf:e
+Reading 40 bytes for flash from input file firmware.elf
+Writing 40 bytes to flash
+Writing | ################################################## | 100% 0.04 s
+Reading | ################################################## | 100% 0.02 s
+40 bytes of flash verified
+
+Avrdude done.  Thank you.
+</code></pre>
+				</section>
+				
+				<section>
+					<img src="avr-interrupt-vectors.png" width="70%">
 				</section>
 
 				<section>
-					<h1>Interrupt vector table</h1>
+					<code></code>
 					<pre><code class="language-avrasm"
->jmp __vector_RESET         ; address 0
+>.section .vectors, "a", %progbits
+jmp __vector_RESET         ; address 0
 jmp __vector_INT0          ; address 4
 jmp __vector_INT1          ; address 8
 jmp __vector_PCINT0        ; address 12
@@ -253,19 +304,148 @@ jmp __vector_TIMER2_COMPB  ; address 32
 jmp __vector_TIMER2_OVF    ; address 36
 ; etc</code></pre>
 				</section>
-
+				
 				<section>
-					<h2></h2>
+					<pre style="margin: 0; width: 100%; font-size: 0.46em"><code class="language-text" style="white-space: pre-wrap;"
+>$ avr-gcc -c -o firmware.o -Os -mmcu=atmega328p arduino-2.c
 
-					(demo: Arduino Uno with just blinking LED without interrupt vector)
+$ avr-gcc -c -o vectors-1.o -mmcu=atmega328p vectors-1.s
 
-					<section>
-						foo
-					</section>
+$ avr-gcc -c -o vectors.o -mmcu=atmega328p vectors-1.s
+
+$ avr-ld -o firmware.elf firmware.o vectors.o -T linkerscript-1.ld
+avr-ld: vectors.o:(.vectors+0x0): undefined reference to `__vector_RESET'
+avr-ld: vectors.o:(.vectors+0x4): undefined reference to `__vector_INT0'
+avr-ld: vectors.o:(.vectors+0x8): undefined reference to `__vector_INT1'
+avr-ld: vectors.o:(.vectors+0xc): undefined reference to `__vector_PCINT0'
+avr-ld: vectors.o:(.vectors+0x10): undefined reference to `__vector_PCINT1'
+avr-ld: vectors.o:(.vectors+0x14): undefined reference to `__vector_PCINT2'
+avr-ld: vectors.o:(.vectors+0x18): undefined reference to `__vector_WDT'
+avr-ld: vectors.o:(.vectors+0x1c): undefined reference to `__vector_TIMER2_COMPA'
+avr-ld: vectors.o:(.vectors+0x20): undefined reference to `__vector_TIMER2_COMPB'
+avr-ld: vectors.o:(.vectors+0x24): undefined reference to `__vector_TIMER2_OVF'
+[etc]
+	
+</code></pre>
+				</section>
+				
+				<section>
+					<pre><code class="language-c" data-line-numbers="1"
+>void __vector_RESET() {
+    DDRB |= (1&lt;&lt;5); // set pin PB5 as an output
+
+    // main loop
+    while (1) {
+        for (long i=1000000; i != 0; i--) {
+            PORTB |= (1&lt;&lt;5); // set pin PB5 high (set bit)
+        }
+        for (long i=1000000; i != 0; i--) {
+            PORTB &= ~(1&lt;&lt;5); // set pin PB5 low (clear bit)
+        }
+    }
+}</code></pre>
+
+					<aside class="notes" data-markdown>
+						change `_start` to `__vector_RESET`
+					</aside>
+				</section>
+				
+				<section>
+					<pre style="margin: 0; width: 100%; font-size: 0.46em"><code class="language-text" style="white-space: pre-wrap;"
+>$ avr-gcc -c -o firmware.o -Os -mmcu=atmega328p arduino-2.c
+
+$ avr-gcc -c -o vectors-1.o -mmcu=atmega328p vectors-1.s
+
+$ avr-gcc -c -o vectors.o -mmcu=atmega328p vectors-1.s
+
+$ avr-ld -o firmware.elf firmware.o vectors.o -T linkerscript-1.ld
+avr-ld: vectors.o:(.vectors+0x4): undefined reference to `__vector_INT0'
+avr-ld: vectors.o:(.vectors+0x8): undefined reference to `__vector_INT1'
+avr-ld: vectors.o:(.vectors+0xc): undefined reference to `__vector_PCINT0'
+avr-ld: vectors.o:(.vectors+0x10): undefined reference to `__vector_PCINT1'
+avr-ld: vectors.o:(.vectors+0x14): undefined reference to `__vector_PCINT2'
+avr-ld: vectors.o:(.vectors+0x18): undefined reference to `__vector_WDT'
+avr-ld: vectors.o:(.vectors+0x1c): undefined reference to `__vector_TIMER2_COMPA'
+avr-ld: vectors.o:(.vectors+0x20): undefined reference to `__vector_TIMER2_COMPB'
+avr-ld: vectors.o:(.vectors+0x24): undefined reference to `__vector_TIMER2_OVF'
+avr-ld: vectors.o:(.vectors+0x28): undefined reference to `__vector_TIMER1_CAPT'
+[etc]
+	
+</code></pre>
+					<aside class="notes" data-markdown>
+						one less undefined reference!
+					</aside>
 				</section>
 
 				<section>
-					<h2>...</h2>
+					<pre><code class="language-avrasm"
+>.section .text
+.global  __vector_default
+__vector_default:
+    rjmp __vector_default
+
+.weak __vector_INT0
+.set  __vector_INT0,         __vector_default
+
+.weak __vector_INT1
+.set  __vector_INT1,         __vector_default
+
+.weak __vector_PCINT0
+.set  __vector_PCINT0,       __vector_default
+
+.weak __vector_PCINT1
+.set  __vector_PCINT1,       __vector_default
+
+; [etc]</code></pre>
+					<aside class="notes" data-markdown>
+						tedious, but works  
+						macros other option
+					</aside>
+				</section>
+				
+				<section>
+					<pre><code class="language-avrasm"
+>.section .text
+.global  __vector_default
+__vector_default:
+    rjmp __vector_default
+
+.macro IRQ handler
+    .weak  \handler
+    .set   \handler, __vector_default
+.endm
+
+IRQ __vector_INT0
+IRQ __vector_INT1
+IRQ __vector_PCINT0
+IRQ __vector_PCINT1
+IRQ __vector_PCINT2
+IRQ __vector_WDT
+; [etc]</code></pre>
+					<aside class="notes" data-markdown>
+						cleanup using assembly macro
+					</aside>
+				</section>
+
+				<section>
+					<pre style="margin: 0; width: 100%; font-size: 0.48em"><code class="language-text" style="white-space: pre-wrap;"
+>$ avr-gcc -c -o firmware.o -Os -mmcu=atmega328p arduino-3.c
+
+$ avr-gcc -c -o vectors.o -mmcu=atmega328p vectors-2.s
+
+$ avr-ld -o firmware.elf firmware.o vectors.o -T linkerscript-1.ld
+
+$ avrdude -c arduino -p atmega328p -P /dev/ttyACM0 -U flash:w:firmware.elf:e
+Reading 146 bytes for flash from input file firmware.elf
+Writing 146 bytes to flash
+Writing | ################################################## | 100% 0.07 s
+Reading | ################################################## | 100% 0.03 s
+146 bytes of flash verified
+
+Avrdude done.  Thank you.</code></pre>
+					<aside class="notes" data-markdown>
+						still blinking! binary size increase 146 bytes
+					</aside>
 				</section>
 
 				<section>
@@ -294,7 +474,11 @@ jmp __vector_TIMER2_OVF    ; address 36
 				hash: true,
 
 				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ],
+
+				// Use 16:9 aspect ratio
+				width: 960,
+				height: 540,
 			});
 		</script>
 	</body>

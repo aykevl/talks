@@ -1,0 +1,27 @@
+.section .vectors, "a", %progbits
+    jmp __vector_RESET
+    jmp __vector_INT0
+    jmp __vector_INT1
+    jmp __vector_PCINT0
+    jmp __vector_PCINT1
+    jmp __vector_PCINT2
+    jmp __vector_WDT
+    jmp __vector_TIMER2_COMPA
+    jmp __vector_TIMER2_COMPB
+    jmp __vector_TIMER2_OVF
+    jmp __vector_TIMER1_CAPT
+    jmp __vector_TIMER1_COMPA
+    jmp __vector_TIMER1_COMPB
+    jmp __vector_TIMER1_OVF
+    jmp __vector_TIMER0_COMPA
+    jmp __vector_TIMER0_COMPB
+    jmp __vector_TIMER0_OVF
+    jmp __vector_SPI_STC
+    jmp __vector_USART_RX
+    jmp __vector_USART_UDRE
+    jmp __vector_USART_TX
+    jmp __vector_ADC
+    jmp __vector_EE_READY
+    jmp __vector_ANALOG_COMP
+    jmp __vector_TWI
+    jmp __vector_SPM_Ready
