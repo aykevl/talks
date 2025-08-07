@@ -124,7 +124,9 @@
 						low specs, typical  
 						old chip
 						
-						AVR instruction set specifically made for microcontrollers
+						AVR instruction set
+						  well known: x86, arm
+						  AVR for MCUs
 						
 						Has IDE, we'll ignore it
 					</aside>
@@ -138,11 +140,14 @@
 
 					<aside class="notes" data-markdown>
 						control pins -> read datasheet
-
-						3 registers, we use 2
 						
-						pin B0, lowest bit  
-						pin 8 on Arduino
+						register: pointer to a piece of hardware  
+						like pointer to variable, but hardware
+						
+						pins grouped in ports, 8 on AVR
+						
+						LED: pin 13, pin B5
+						pin B5, bit 5 in both registers
 
 						more bits than registers! 8 in register, 6 on hardware
 					</aside>
@@ -156,15 +161,12 @@
 #define DDRB  *(volatile uint8_t*)(0x24)
 #define PORTB *(volatile uint8_t*)(0x25)
 
-int main() {
+void _start() {
     DDRB  |= 1 &lt;&lt; 5; // set pin PB5 as an output
     PORTB |= 1 &lt;&lt; 5; // set pin PB5 high
 
     // wait forever
-    while (1) {
-    }
-
-    return 0; // unreachable (satisfy the compiler)
+    while (1) {}
 }</code></pre>
 
 					<aside class="notes" data-markdown>
@@ -248,6 +250,13 @@ Avrdude done.  Thank you.</code></pre>
 				
 				<section>
 					<img src="avr-program-memory.png" style="width: 90%">
+					<aside class="notes" data-markdown>
+						0x3fff -> 16kB ??  
+						flash 16-bit words -> normally 8 bit  
+						-> actually 32kB flash
+						
+						can ignore boot flash
+					</aside>
 				</section>
 				
 				<section>
@@ -446,6 +455,253 @@ Avrdude done.  Thank you.</code></pre>
 					<aside class="notes" data-markdown>
 						still blinking! binary size increase 146 bytes
 					</aside>
+				</section>
+				
+				<section>
+					<h1>BBC micro:bit v2</h1>
+					<ul>
+						<li>
+							<img src="microbit.jpg" width="40%" style="float: right">
+							nRF52833
+						</li>
+						<li>64MHz</li>
+						<li>512kB flash, 128kB RAM</li>
+						<li>ARM instruction set<br>(Cortex-M4)</li>
+					</ul>
+					
+					<aside class="notes" data-markdown>
+						now for something completely different
+	
+						beefier:  
+						16x flash  
+						64x RAM
+						
+						32-bit ARM!  
+						similar to old Raspberry Pis,  
+						fewer instructions than SBC, more powerful than AVR
+					</aside>
+				</section>
+
+				<section>
+					<img src="microbit-memory-map.png" style="width: 50%"/>
+
+					<aside class="notes" data-markdown>
+						flash: address 0  
+						data RAM: 0x2000_0000
+					</aside>
+				</section>
+
+				<section>
+					<pre><code class="language-text"
+>MEMORY {
+    FLASH (r) : ORIGIN = 0, LENGTH = 512k
+}
+
+ENTRY(Reset_Handler)
+
+SECTIONS
+{
+    .text : {
+        KEEP(*(.vectors))
+        *(.text)
+    } > FLASH
+}</code></pre>
+				</section>
+
+				<section>
+					<pre style="font-size: 0.45em"><code class="language-c"
+>__attribute__((section(".vectors")))
+const uintptr_t __vector_table[16] = {
+  (uintptr_t)(&__stack_pointer),   // Initial stack pointer
+  (uintptr_t)Reset_Handler,        // Reset Handler
+  (uintptr_t)NMI_Handler,          // NMI Handler
+  (uintptr_t)HardFault_Handler,    // Hard Fault Handler
+  (uintptr_t)MemManage_Handler,    // MPU Fault Handler
+  (uintptr_t)BusFault_Handler,     // Bus Fault Handler
+  (uintptr_t)UsageFault_Handler,   // Usage Fault Handler
+  (uintptr_t)SecureFault_Handler,  // Secure Fault Handler
+  0,                               // Reserved
+  0,                               // Reserved
+  0,                               // Reserved
+  (uintptr_t)SVC_Handler,          // SVC Handler
+  (uintptr_t)DebugMon_Handler,     // Debug Monitor Handler
+  0,                               // Reserved
+  (uintptr_t)PendSV_Handler,       // PendSV Handler
+  (uintptr_t)SysTick_Handler,      // SysTick Handler
+
+  // more interrupt handlers follow
+};</code></pre>
+					
+					<aside class="notes" data-markdown>
+						literally just an array of pointers
+						
+						first: stack pointer  
+						second: reset handler  
+						others: various interrupts
+					</aside>
+				</section>
+	
+				<section>
+					<pre><code class="language-c"
+>extern uintptr_t __stack_pointer[0];</code></pre>
+				</section>
+
+				<section>
+					<pre style="font-size: 0.43em; margin: 0; width: 100%"><code class="language-c"
+>void Default_Handler(void) {
+    while (1) {}
+}
+
+void Reset_Handler             (void);
+void NMI_Handler               (void) __attribute__ ((weak, alias("Default_Handler")));
+void HardFault_Handler         (void) __attribute__ ((weak, alias("Default_Handler")));
+void MemManage_Handler         (void) __attribute__ ((weak, alias("Default_Handler")));
+void MemoryManagement_Handler  (void) __attribute__ ((weak, alias("Default_Handler")));
+void BusFault_Handler          (void) __attribute__ ((weak, alias("Default_Handler")));
+void UsageFault_Handler        (void) __attribute__ ((weak, alias("Default_Handler")));
+void SecureFault_Handler       (void) __attribute__ ((weak, alias("Default_Handler")));
+void SVC_Handler               (void) __attribute__ ((weak, alias("Default_Handler")));
+void DebugMon_Handler          (void) __attribute__ ((weak, alias("Default_Handler")));
+void PendSV_Handler            (void) __attribute__ ((weak, alias("Default_Handler")));
+void SysTick_Handler           (void) __attribute__ ((weak, alias("Default_Handler")));
+</code></pre>
+					
+					<aside class="notes" data-markdown>
+						like AVR interrupt vectors, but in C
+						
+						stack pointer: leave undefined
+					</aside>
+				</section>
+
+				<section>
+					<pre style="font-size: 0.45em"><code class="language-c"
+>typedef struct {
+    volatile uint32_t OUT;
+    volatile uint32_t OUTSET;
+    volatile uint32_t OUTCLR;
+    volatile uint32_t IN;
+    volatile uint32_t DIR;
+    volatile uint32_t DIRSET;
+    volatile uint32_t DIRCLR;
+    volatile uint32_t LATCH;
+    volatile uint32_t DETECTMODE;
+} GPIO_Type;
+
+#define P0 ((GPIO_Type*)(0x50000504))
+
+void Reset_Handler(void) {
+    P0->DIRSET = 1 << 21; // set P0.21 (ROW1) as output
+    P0->DIRSET = 1 << 28; // set P0.28 (COL1) as output
+    P0->OUTSET = 1 << 21; // set P0.21 (ROW1) high
+
+    while (1) {}
+}</code></pre>
+				</section>
+				
+				<section>
+					<pre><code class="language-none"
+>$ clang -c --target=armv7em-none-eabi-o \
+        -o microbit-vector.o microbit-vector.c
+
+$ clang -c --target=armv7em-none-eabi \
+        -o microbit.o microbit-led.c
+
+$ ld.lld -o microbit.elf microbit-vector.o microbit.o \
+         -T microbit.ld
+
+$ ld.lld -o microbit.elf microbit-vector.o microbit.o \
+         -T microbit.ld
+ld.lld: error: undefined symbol: __stack_pointer
+>>> referenced by microbit-vector.c
+>>>               microbit-vector.o:(__vector_table)</code></pre>
+				</section>
+				
+				<section>
+					<pre style="font-size: 0.51em"><code class="language-text"  data-line-numbers="3,15-18"
+>MEMORY {
+    FLASH (r) : ORIGIN = 0,          LENGTH = 512k
+    RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 128k
+}
+
+ENTRY(Reset_Handler)
+
+SECTIONS
+{
+    .text : {
+        KEEP(*(.vectors))
+        *(.text)
+    } > FLASH
+
+    .stack : {
+        . += 4096;
+        __stack_pointer = .;
+    } > RAM
+}</code></pre>
+				</section>
+
+				<section>
+					<pre style=""><code class="language-none"
+>$ clang -c --target=armv7em-none-eabi-o \
+        -o microbit-vector.o microbit-vector.c
+
+$ clang -c --target=armv7em-none-eabi \
+        -o microbit.o microbit-led.c
+
+$ ld.lld -o microbit.elf microbit-vector.o microbit.o \
+         -T microbit.ld
+ 
+$ openocd -f interface/cmsis-dap.cfg -f target/nrf52.cfg \
+          -c 'transport select swd' \
+          -c 'program microbit.elf reset exit'
+[...lots of verbose logging...]
+** Programming Finished **
+** Resetting Target **
+shutdown command invoked</code></pre>
+				</section>
+
+				<section>
+					[image of micro:bit with LED on]
+				</section>
+				
+				<section>
+					<pre><code class="language-c" data-line-numbers="5-12"
+>void Reset_Handler(void) {
+    P0->DIRSET = 1 << 21; // set P0.21 (ROW1) as output
+    P0->DIRSET = 1 << 28; // set P0.28 (COL1) as output
+
+    while (1) {
+        for (int i=0; i<1000000; i++) {
+            P0->OUTSET = 1 << 21; // set P0.21 (ROW1) high
+        }
+        for (int i=0; i<1000000; i++) {
+            P0->OUTCLR = 1 << 21; // set P0.21 (ROW1) low
+        }
+    }
+}</code></pre>
+				</section>
+				
+				<section>
+					<pre style=""><code class="language-none"
+>$ clang -c --target=armv7em-none-eabi-o \
+        -o microbit-vector.o microbit-vector.c
+
+$ clang -c --target=armv7em-none-eabi \
+        -o microbit.o microbit-blink.c
+
+$ ld.lld -o microbit.elf microbit-vector.o microbit.o \
+         -T microbit.ld
+ 
+$ openocd -f interface/cmsis-dap.cfg -f target/nrf52.cfg \
+          -c 'transport select swd' \
+          -c 'program microbit.elf reset exit'
+[...lots of verbose logging...]
+** Programming Finished **
+** Resetting Target **
+shutdown command invoked</code></pre>
+				</section>
+
+				<section>
+					[image of micro:bit with blinking LED]
 				</section>
 
 				<section>
