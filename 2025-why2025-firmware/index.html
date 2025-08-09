@@ -48,9 +48,12 @@
 				<section>
 					<h1>Who am I</h1>
 					<ul>
-						<li><b>MicroPython</b>:<br>&nbsp;&nbsp;worked on nrf5x support long ago</li>
 						<li>
-							<img src="earrings.jpg" width="50%" style="float: right">
+							<b>MicroPython</b>:<br>
+							&nbsp;&nbsp;worked on nrf5x support
+							<img src="earrings.jpg" width="48%" style="float: right">
+						</li>
+						<li>
 							<b>TinyGo</b>:<br>
 								&nbsp;&nbsp;creator and maintainer
 						</li>
@@ -62,7 +65,6 @@
 						  learned lots about baremetal programming
 						* TinyGo, primary thing now  
 						  Go compiler (same language), targetting baremetal/wasm/OS  
-						  Not here to talk about TinyGo
 
 						also a witch
 					</aside>
@@ -72,23 +74,17 @@
 					<h2>Topics for this talk</h2>
 
 					<ul>
-						<li>How to read datasheets</li>
-						<li>Linker scripts</li>
-						<li>Interrupt vectors</li>
-						<li>Blinking LEDs</li>
+						<ul>Blinking LED on Arduino Uno</ul>
+						<ul>Blinking LED on BBC micro:bit</ul>
 					</ul>
+					...without SDK!
 					<aside class="notes" data-markdown>
-						How to read datasheet: to get started
+						* memory map
+						* GPIO periperhals without HAL
+						* linker scripts
+						* interrupt vectors
 
-						Linker scripts: tells which bytes go where in the binary
-
-						Interrupt vectors: useful to know  
-						also: reset is also interrupt vector
-
-						Blinking LEDs: hello world of electronics  
-						know that everything is working
-
-						Not much about C
+						C useful
 					</aside>
 				</section>
 
@@ -135,8 +131,8 @@
 				<section>
 					<h1>I/O registers!</h1>
 
-					<img src="avr-ddrb.png"  style="width: 70%; margin: 0"><br/>
-					<img src="avr-portb.png" style="width: 70%; margin: 0">
+					<img src="avr-ddrb.png"  style="width: 60%; margin: 0"><br/>
+					<img src="avr-portb.png" style="width: 60%; margin: 0">
 
 					<aside class="notes" data-markdown>
 						control pins -> read datasheet
@@ -149,7 +145,7 @@
 						LED: pin 13, pin B5
 						pin B5, bit 5 in both registers
 
-						more bits than registers! 8 in register, 6 on hardware
+						set high 5th bit in both ports: DDRB, PORTB
 					</aside>
 				</section>
 
@@ -218,8 +214,14 @@ Avrdude done.  Thank you.</code></pre>
 				</section>
 	
 				<section>
-					<pre><code class="language-c"
->void _start() {
+					<pre style="margin: 0; width: 100%"><code class="language-c" data-line-numbers="10-18"
+>#include &lt;stdint.h>
+
+// Memory mapped I/O (values from the datasheet).
+#define DDRB  *(volatile uint8_t*)(0x24)
+#define PORTB *(volatile uint8_t*)(0x25)
+
+void _start() {
     DDRB |= (1&lt;&lt;5); // set pin PB5 as an output
 
     // main loop
@@ -236,20 +238,26 @@ Avrdude done.  Thank you.</code></pre>
 					<aside class="notes" data-markdown>
 						poor man's delay: set or clear same bit repeatedly
 						
-						skipped first part for clarity
+						loop: compiler optimizations
 						
-						loop count experimental  
-						assembly much longer
-						contains CBI instruction to clear that bit
+						loop count experimental
 					</aside>
 				</section>
 				
 				<section>
 					<img src="arduino-blink.gif" width="70%">
+						
+					<aside class="notes" data-markdown>
+						Arduino Uno clone (original broken)
+						
+						---
+						
+						skipped a few steps...
+					</aside>
 				</section>
 				
 				<section>
-					<img src="avr-program-memory.png" style="width: 90%">
+					<img src="avr-program-memory.png" style="width: 80%">
 					<aside class="notes" data-markdown>
 						0x3fff -> 16kB ??  
 						flash 16-bit words -> normally 8 bit  
@@ -272,6 +280,13 @@ SECTIONS
     } > FLASH
 }</code></pre>
 					<aside class="notes" data-markdown>
+						two parts
+						
+						1. from before
+						2. text: really machine code  
+						   stored in flash
+						
+						object files vs executables
 					</aside>
 				</section>
 				
@@ -294,7 +309,17 @@ Avrdude done.  Thank you.
 				</section>
 				
 				<section>
-					<img src="avr-interrupt-vectors.png" width="70%">
+					<img src="avr-interrupt-vectors.png" width="60%">
+
+					<aside class="notes" data-markdown>
+						T flag linkerscript
+						
+						firmware file exactly the same
+						
+						---
+						
+						another thing we skipped... important for interrupts
+					</aside>
 				</section>
 
 				<section>
@@ -312,10 +337,17 @@ jmp __vector_TIMER2_COMPA  ; address 28
 jmp __vector_TIMER2_COMPB  ; address 32
 jmp __vector_TIMER2_OVF    ; address 36
 ; etc</code></pre>
+					<aside class="notes" data-markdown>
+						interrupt vector table
+						
+						basically list of jump instructions
+						
+						"address" 16 bit!
+					</aside>
 				</section>
 				
 				<section>
-					<pre style="margin: 0; width: 100%; font-size: 0.46em"><code class="language-text" style="white-space: pre-wrap;"
+					<pre style="margin: 0; width: 100%; font-size: 0.44em"><code class="language-text" style="white-space: pre-wrap;" data-line-numbers="3,7-18"
 >$ avr-gcc -c -o firmware.o -Os -mmcu=atmega328p arduino-2.c
 
 $ avr-gcc -c -o vectors-1.o -mmcu=atmega328p vectors-1.s
@@ -360,7 +392,7 @@ avr-ld: vectors.o:(.vectors+0x24): undefined reference to `__vector_TIMER2_OVF'
 				</section>
 				
 				<section>
-					<pre style="margin: 0; width: 100%; font-size: 0.46em"><code class="language-text" style="white-space: pre-wrap;"
+					<pre style="margin: 0; width: 100%; font-size: 0.44em"><code class="language-text" style="white-space: pre-wrap;" data-line-numbers="8-17"
 >$ avr-gcc -c -o firmware.o -Os -mmcu=atmega328p arduino-2.c
 
 $ avr-gcc -c -o vectors-1.o -mmcu=atmega328p vectors-1.s
@@ -413,7 +445,7 @@ __vector_default:
 				</section>
 				
 				<section>
-					<pre><code class="language-avrasm"
+					<pre><code class="language-avrasm" data-line-numbers="6-9,11-16"
 >.section .text
 .global  __vector_default
 __vector_default:
@@ -458,6 +490,22 @@ Avrdude done.  Thank you.</code></pre>
 				</section>
 				
 				<section>
+					<img src="arduino-blink.gif" width="70%">
+						
+					<aside class="notes" data-markdown>
+						still blinking!
+						
+						what we have:
+						  * blinking LED, no SDK
+						  * interrupt vector
+						
+						skipped:
+						  * global variables
+						  * stack (default end of RAM)
+					</aside>
+				</section>
+				
+				<section>
 					<h1>BBC micro:bit v2</h1>
 					<ul>
 						<li>
@@ -470,8 +518,8 @@ Avrdude done.  Thank you.</code></pre>
 					</ul>
 					
 					<aside class="notes" data-markdown>
-						now for something completely different
-	
+						next we're going to look at...
+						
 						beefier:  
 						16x flash  
 						64x RAM
@@ -492,7 +540,7 @@ Avrdude done.  Thank you.</code></pre>
 				</section>
 
 				<section>
-					<pre><code class="language-text"
+					<pre><code class="language-text" data-line-numbers="2,5"
 >MEMORY {
     FLASH (r) : ORIGIN = 0, LENGTH = 512k
 }
@@ -506,6 +554,13 @@ SECTIONS
         *(.text)
     } > FLASH
 }</code></pre>
+					<aside class="notes" data-markdown>
+						linker script right away
+						
+						similar, changes:
+						  * larger memory
+						  * ENTRY: suppress linker warning
+					</aside>
 				</section>
 
 				<section>
@@ -540,15 +595,12 @@ const uintptr_t __vector_table[16] = {
 						others: various interrupts
 					</aside>
 				</section>
-	
-				<section>
-					<pre><code class="language-c"
->extern uintptr_t __stack_pointer[0];</code></pre>
-				</section>
 
 				<section>
 					<pre style="font-size: 0.43em; margin: 0; width: 100%"><code class="language-c"
->void Default_Handler(void) {
+>extern uintptr_t __stack_pointer[0];
+
+void Default_Handler(void) {
     while (1) {}
 }
 
@@ -572,36 +624,14 @@ void SysTick_Handler           (void) __attribute__ ((weak, alias("Default_Handl
 						stack pointer: leave undefined
 					</aside>
 				</section>
-
-				<section>
-					<img src="microbit-gpio.png" width="68%" style="margin: 0"/>
-				</section>
-
+				
 				<section>
 					<pre style="font-size: 0.45em"><code class="language-c"
->typedef struct {
-    volatile uint32_t OUT;
-    volatile uint32_t OUTSET;
-    volatile uint32_t OUTCLR;
-    volatile uint32_t IN;
-    volatile uint32_t DIR;
-    volatile uint32_t DIRSET;
-    volatile uint32_t DIRCLR;
-    volatile uint32_t LATCH;
-    volatile uint32_t DETECTMODE;
-} GPIO_Type;
-
-#define P0 ((GPIO_Type*)(0x50000504))
-
-void Reset_Handler(void) {
-    P0->DIRSET = 1 << 21; // set P0.21 (ROW1) as output
-    P0->DIRSET = 1 << 28; // set P0.28 (COL1) as output
-    P0->OUTSET = 1 << 21; // set P0.21 (ROW1) high
-
+>void Reset_Handler(void) {
     while (1) {}
 }</code></pre>
 				</section>
-				
+
 				<section>
 					<pre><code class="language-none"
 >$ clang -c --target=armv7em-none-eabi-o \
@@ -642,7 +672,57 @@ SECTIONS
     } > RAM
 }</code></pre>
 				</section>
+				
+				<section>
+					<pre style=""><code class="language-none"
+>$ clang -c --target=armv7em-none-eabi-o \
+        -o microbit-vector.o microbit-vector.c
 
+$ clang -c --target=armv7em-none-eabi \
+        -o microbit.o microbit-led.c
+
+$ ld.lld -o microbit.elf microbit-vector.o microbit.o \
+         -T microbit.ld
+ 
+$ openocd -f interface/cmsis-dap.cfg -f target/nrf52.cfg \
+          -c 'transport select swd' \
+          -c 'program microbit.elf reset exit'
+[...lots of verbose logging...]
+** Programming Finished **
+** Resetting Target **
+shutdown command invoked</code></pre>
+				</section>
+
+
+				<section>
+					<img src="microbit-gpio.png" width="64%" style="margin: 0"/>
+				</section>
+
+				<section>
+					<pre style="font-size: 0.45em"><code class="language-c"
+>typedef struct {
+    volatile uint32_t OUT;
+    volatile uint32_t OUTSET;
+    volatile uint32_t OUTCLR;
+    volatile uint32_t IN;
+    volatile uint32_t DIR;
+    volatile uint32_t DIRSET;
+    volatile uint32_t DIRCLR;
+    volatile uint32_t LATCH;
+    volatile uint32_t DETECTMODE;
+} GPIO_Type;
+
+#define P0 ((GPIO_Type*)(0x50000504))
+
+void Reset_Handler(void) {
+    P0->DIRSET = 1 << 21; // set P0.21 (ROW1) as output
+    P0->DIRSET = 1 << 28; // set P0.28 (COL1) as output
+    P0->OUTSET = 1 << 21; // set P0.21 (ROW1) high
+
+    while (1) {}
+}</code></pre>
+				</section>
+				
 				<section>
 					<pre style=""><code class="language-none"
 >$ clang -c --target=armv7em-none-eabi-o \
