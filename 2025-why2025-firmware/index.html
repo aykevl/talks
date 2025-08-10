@@ -32,7 +32,7 @@
 		<div class="reveal">
 			<div class="slides">
 				<section>
-					<h2>Ayke van Laethem</h2>
+					<h2><strike>Ayke</strike> Maaike van Laethem</h2>
 					<p>she/her 🏳️‍⚧️</p>
 					<p><em>Bare metal programming from the ground up</em></p>
 					<p>
@@ -120,8 +120,8 @@
 						low specs, typical  
 						old chip
 						
-						AVR instruction set
-						  well known: x86, arm
+						AVR instruction set  
+						  well known: x86, arm, risc-v  
 						  AVR for MCUs
 						
 						Has IDE, we'll ignore it
@@ -184,7 +184,7 @@ rjmp .-2        ; jump back to the same instruction (loop)</code></pre>
 				</section>
 				
 				<section>
-					<pre style="margin: 0; width: 100%; font-size: 0.50em"><code class="language-none" style="white-space: pre-wrap;"
+					<pre style="margin: 0; width: 100%; font-size: 0.50em"><code class="language-text" style="white-space: pre-wrap;"
 >$ avr-gcc -c -o firmware.o -Os -mmcu=atmega328p arduino-1.c
 
 $ avr-ld -o firmware.elf firmware.o
@@ -306,11 +306,6 @@ Reading | ################################################## | 100% 0.02 s
 
 Avrdude done.  Thank you.
 </code></pre>
-				</section>
-				
-				<section>
-					<img src="avr-interrupt-vectors.png" width="60%">
-
 					<aside class="notes" data-markdown>
 						T flag linkerscript
 						
@@ -320,6 +315,10 @@ Avrdude done.  Thank you.
 						
 						another thing we skipped... important for interrupts
 					</aside>
+				</section>
+				
+				<section>
+					<img src="avr-interrupt-vectors.png" width="60%">
 				</section>
 
 				<section>
@@ -630,11 +629,14 @@ void SysTick_Handler           (void) __attribute__ ((weak, alias("Default_Handl
 >void Reset_Handler(void) {
     while (1) {}
 }</code></pre>
+					<aside class="notes" data-markdown>
+						test compile
+					</aside>
 				</section>
 
 				<section>
-					<pre><code class="language-none"
->$ clang -c --target=armv7em-none-eabi-o \
+					<pre><code class="language-text"
+>$ clang -c --target=armv7em-none-eabi \
         -o microbit-vector.o microbit-vector.c
 
 $ clang -c --target=armv7em-none-eabi \
@@ -642,16 +644,16 @@ $ clang -c --target=armv7em-none-eabi \
 
 $ ld.lld -o microbit.elf microbit-vector.o microbit.o \
          -T microbit.ld
-
-$ ld.lld -o microbit.elf microbit-vector.o microbit.o \
-         -T microbit.ld
 ld.lld: error: undefined symbol: __stack_pointer
 >>> referenced by microbit-vector.c
 >>>               microbit-vector.o:(__vector_table)</code></pre>
+					<aside class="notes" data-markdown>
+						much prefer over GCC: cross compiler
+					</aside>
 				</section>
 				
 				<section>
-					<pre style="font-size: 0.51em"><code class="language-text"  data-line-numbers="3,15-18"
+					<pre style="font-size: 0.51em"><code class="language-text" data-line-numbers="3,15-18"
 >MEMORY {
     FLASH (r) : ORIGIN = 0,          LENGTH = 512k
     RAM (rwx) : ORIGIN = 0x20000000, LENGTH = 128k
@@ -674,8 +676,8 @@ SECTIONS
 				</section>
 				
 				<section>
-					<pre style=""><code class="language-none"
->$ clang -c --target=armv7em-none-eabi-o \
+					<pre style=""><code class="language-text" data-line-numbers="10-16"
+>$ clang -c --target=armv7em-none-eabi \
         -o microbit-vector.o microbit-vector.c
 
 $ clang -c --target=armv7em-none-eabi \
@@ -692,7 +694,19 @@ $ openocd -f interface/cmsis-dap.cfg -f target/nrf52.cfg \
 ** Resetting Target **
 shutdown command invoked</code></pre>
 				</section>
+				
+				<section>
+					<img src="microbit-off.png" width="40%"/>
+				</section>
+				
+				<section>
+					<img src="microbit-matrix.png" width="40%"/>
+				</section>
 
+				<section>
+					<img src="microbit-pins.png" width="30%"/><br>
+					https://tech.microbit.org/hardware/schematic/
+				</section>
 
 				<section>
 					<img src="microbit-gpio.png" width="64%" style="margin: 0"/>
@@ -721,11 +735,18 @@ void Reset_Handler(void) {
 
     while (1) {}
 }</code></pre>
+				<aside class="notes" data-markdown>
+					struct instead of individual registers
+					
+					SET/CLR (lack of special instructions)
+					
+					set both as output, set only ROW1 high
+				</aside>
 				</section>
 				
 				<section>
-					<pre style=""><code class="language-none"
->$ clang -c --target=armv7em-none-eabi-o \
+					<pre style=""><code class="language-text"
+>$ clang -c --target=armv7em-none-eabi \
         -o microbit-vector.o microbit-vector.c
 
 $ clang -c --target=armv7em-none-eabi \
@@ -765,8 +786,8 @@ shutdown command invoked</code></pre>
 				</section>
 				
 				<section>
-					<pre style=""><code class="language-none"
->$ clang -c --target=armv7em-none-eabi-o \
+					<pre style=""><code class="language-text"
+>$ clang -c --target=armv7em-none-eabi \
         -o microbit-vector.o microbit-vector.c
 
 $ clang -c --target=armv7em-none-eabi \
