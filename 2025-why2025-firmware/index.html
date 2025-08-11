@@ -77,14 +77,15 @@
 						<ul>Blinking LED on Arduino Uno</ul>
 						<ul>Blinking LED on BBC micro:bit</ul>
 					</ul>
-					...without SDK!
+					<p>...without SDK!</p>
 					<aside class="notes" data-markdown>
 						* memory map
 						* GPIO periperhals without HAL
 						* linker scripts
 						* interrupt vectors
 
-						C useful
+						C useful  
+						especially Arduino
 					</aside>
 				</section>
 
@@ -249,10 +250,6 @@ void _start() {
 						
 					<aside class="notes" data-markdown>
 						Arduino Uno clone (original broken)
-						
-						---
-						
-						skipped a few steps...
 					</aside>
 				</section>
 				
@@ -840,6 +837,10 @@ shutdown command invoked</code></pre>
 				// Use 16:9 aspect ratio
 				width: 960,
 				height: 540,
+				
+				slideNumber: true,
+				
+				totalTime: 25*60,
 			});
 		</script>
 	</body>
